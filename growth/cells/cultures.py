@@ -1,4 +1,5 @@
 from copy import deepcopy
+import pickle
 import numpy as np
 from functools import reduce
 from operator import add
@@ -6,91 +7,12 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
-from .triangulation import LocalTriangulation
-from .fluorescence import Fluorescence
+from .clones import Clones
 from .phylogeny import Phylogeny
-from .animation import Animation
-
-
-class Cell:
-
-    def __init__(self, xy=None, chromosomes=None, lineage=''):
-
-        # set generation
-        self.lineage = lineage
-
-        # set chromosomes
-        if chromosomes is None:
-            chromosomes = np.array([0, 1])
-        self.chromosomes = chromosomes
-
-        # set position
-        if xy is None:
-            xy = np.zeros(2, dtype=float)
-        self.xy = xy
-
-    @property
-    def generation(self):
-        return len(self.lineage)
-
-    @property
-    def genotype(self):
-        return self.chromosomes.sum()
-
-    @property
-    def phenotype(self):
-        return np.random.normal(loc=self.genotype, scale=1.)
-
-    def copy(self):
-        """ Returns copy of cell. """
-        return self.__class__(self.xy, self.chromosomes, self.lineage)
-
-    def set_xy(self, xy):
-        self.xy = xy
-
-    def recombine(self, recombination=0.):
-
-        # duplicate chromosomes
-        chromosomes = np.tile(self.chromosomes, 2)
-
-        # recombination
-        if np.random.random() <= recombination:
-            chromosomes.sort()
-
-        return chromosomes
-
-    def divide(self, recombination=0., reference_population=1000):
-
-        # set average spacing between cells
-        spacing = np.sqrt(2/reference_population) / 1e5
-
-        # perform recombination
-        chromosomes = self.recombine(recombination=recombination)
-
-        # determine child positions
-        jitter = np.random.normal(scale=spacing, size=(2, 2))
-        xy_a, xy_b = self.xy+jitter[0], self.xy+jitter[1]
-
-        # instantiate children
-        daughter_a = self.__class__(xy_a, chromosomes[:2], self.lineage+'0')
-        daughter_b = self.__class__(xy_b, chromosomes[2:], self.lineage+'1')
-
-        return [daughter_a, daughter_b]
-
-    def grow(self, max_generation=3, **kwargs):
-        """
-        Recursive growth.
-        """
-
-        # stopping criterion
-        if self.generation >= max_generation:
-            return [self]
-
-        # divide
-        else:
-            children = self.divide(**kwargs)
-            recurse = lambda x: x.grow(max_generation=max_generation, **kwargs)
-            return reduce(add, map(recurse, children))
+from ..spatial.triangulation import LocalTriangulation
+from ..fluorescence.fluorescence import Fluorescence
+from ..visualization.animation import Animation
+from .cells import Cell
 
 
 class CultureProperties:
@@ -137,12 +59,31 @@ class CultureProperties:
     @property
     def triangulation(self):
         """ Delaunay triangulation with edge-length filtering. """
-        return LocalTriangulation(*self.xy.T)
+        return LocalTriangulation(*self.xy.T, max_length=0.1)
 
     @property
     def xy_graph(self):
-        #return nx.Graph(LocalTriangulation(*xy.T).edges)
-        return nx.Graph(self.triangulation.edges)
+        """ Graph of locally adjacent cells. """
+        return nx.Graph(self.triangulation.edges.tolist())
+
+    @property
+    def labeled_graph(self):
+        """ Graph of locally adjacent cells including cell genotypes. """
+        G = self.xy_graph
+        _ = [G.add_nodes_from(self.select(x), genotype=x) for x in range(3)]
+        return G
+
+    @property
+    def heterogeneity(self):
+        """ Returns fraction of edges that connect differing genotypes. """
+        G = self.xy_graph
+        num_edges = np.not_equal(*self.genotypes[np.array(G.edges)].T).sum()
+        return num_edges / self.size
+
+    @property
+    def percent_heterozygous(self):
+        """ Fraction of population with heterozygous chromosomes. """
+        return (self.genotypes==1).sum() / self.size
 
     @property
     def generations(self):
@@ -179,6 +120,24 @@ class CultureProperties:
         indices = np.argsort(self.lineages)
         return ((indices - spread) / spread)  * self.scaling
 
+    def select(self, genotype):
+        """ Returns indices of cells with <genotype>.  """
+        return (self.genotypes==genotype).nonzero()[0]
+
+    def parse_clones(self, genotype):
+        """ Returns properties for clones of specified <genotype>.  """
+        clones = self.xy_graph.subgraph(self.select(genotype))
+        return {
+            'number': nx.connected.number_connected_components(clones),
+            'sizes': [len(c) for c in nx.connected_components(clones)],
+            'nodes': [np.array(c) for c in nx.connected_components(clones)]}
+
+    @property
+    def clones(self):
+        """ Clones instance. """
+        data = {genotype: self.parse_clones(genotype) for genotype in range(3)}
+        return Clones(data)
+
 
 class CultureVisualization:
 
@@ -200,9 +159,6 @@ class CultureVisualization:
         Scatter cells in space.
 
         """
-
-        # set normalization
-
 
         # evaluate marker colors
         if colorby == 'genotype':
@@ -251,10 +207,30 @@ class Culture(CultureProperties, CultureVisualization):
     def __add__(self, b):
         return self.__class__(self.cells + b.cells)
 
+    def save(self, filepath, save_history=True):
+        """ Save pickled object to <path>. """
+
+        # get object to be saved
+        if save_history:
+            obj = self
+        else:
+            obj = self.freeze(-1)
+
+        # save object
+        with open(filepath, 'wb') as file:
+            pickle.dump(obj, file, protocol=-1)
+
+    @staticmethod
+    def load(filepath):
+        """ Load pickled instance from <path>. """
+        with open(filepath, 'rb') as file:
+            instance = pickle.load(file)
+        return instance
+
     def branch(self, t=None):
         """ Returns copy of culture at generation <t> including history. """
 
-        culture = Culture()
+        culture = self.__class__()
 
         if t is None:
             culture.history = self.history[:]
@@ -269,7 +245,7 @@ class Culture(CultureProperties, CultureVisualization):
     def freeze(self, t):
         """ Returns snapshot of culture at generation <t>. """
         cells = self.history[t]
-        culture = Culture(scaling=float(len(cells))/self.size)
+        culture = self.__class__(scaling=float(len(cells))/self.size)
         culture.history = [cells]
         culture.fluorescence = deepcopy(self.fluorescence)
         return culture
@@ -279,7 +255,7 @@ class Culture(CultureProperties, CultureVisualization):
         """ Inoculate with <N> generations of heterozygous cells. """
         return Cell().grow(max_generation=N)
 
-    def move(self, center=None, reference=1000):
+    def move(self, center=None, reference_population=1000):
         """
         Update cell positions.
 
@@ -287,7 +263,7 @@ class Culture(CultureProperties, CultureVisualization):
 
             center (np.ndarray[float]) - center position
 
-            reference (int) - number of cells in unit circle
+            reference_population (int) - number of cells in unit circle
 
         """
 
@@ -296,7 +272,7 @@ class Culture(CultureProperties, CultureVisualization):
            center = np.zeros(2, dtype=float)
 
         # determine scaling (colony radius)
-        radius = np.sqrt(self.size/reference)
+        radius = np.sqrt(self.size/reference_population)
 
         # run relaxation
         xy_dict = nx.kamada_kawai_layout(
@@ -325,14 +301,18 @@ class Culture(CultureProperties, CultureVisualization):
             else:
                 self.cells.append(parent.copy())
 
-    def update(self, division=0.1, recombination=0.1, **kwargs):
+    def update(self,
+               division=0.1,
+               recombination=0.1,
+               reference_population=1000,
+               **kwargs):
         self.history.append([])
         self.divide(division, recombination)
-        self.move(**kwargs)
+        self.move(reference_population=reference_population, **kwargs)
 
-    def grow(self, max_population=10, max_iters=None, **kwargs):
+    def grow(self, min_population=10, max_iters=None, **kwargs):
         i = 0
-        while self.size < max_population:
+        while self.size < min_population:
             self.update(**kwargs)
             if max_iters is not None:
                 i += 1

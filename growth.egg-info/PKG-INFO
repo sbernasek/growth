@@ -1,0 +1,12 @@
+Metadata-Version: 1.0
+Name: growth
+Version: 0.1
+Summary: Package for simulating mitotic recombination during tissue development.
+Home-page: https://github.com/sebastianbernasek/growth
+Author: Sebastian Bernasek
+Author-email: sebastian@u.northwestern.com
+License: MIT
+Description: # Growth
+        Code used to simulate mitotic recombination during tissue development.
+        
+Platform: UNKNOWN

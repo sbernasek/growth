@@ -1,9 +1,8 @@
 import numpy as np
-from matplotlib import animation
 import matplotlib.pyplot as plt
+from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 from matplotlib.colors import Normalize
-
 
 
 class Animation:
