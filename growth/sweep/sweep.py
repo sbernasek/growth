@@ -1,4 +1,4 @@
-from os.path import isdir
+from os.path import isdir, exists, join
 from os import mkdir
 import numpy as np
 import pandas as pd
@@ -9,16 +9,35 @@ from .simulation import GrowthSimulation
 class Sweep(Batch):
 
     def __init__(self,
-                 density=12,
+                 density=10,
                  batch_size=10,
                  division_rate=0.1,
-                 population=2**12):
+                 recombination_duration=200,
+                 population=1000):
         self.density = density
         self.population = population
         self.division_rate = division_rate
+        self.recombination_duration = recombination_duration
+
         parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
         parameters = np.repeat(parameters, repeats=batch_size, axis=0)
         super().__init__(parameters)
+
+    @classmethod
+    def load(cls, path):
+        sweep = super().load(path)
+        results_path = join(path, 'data.hdf')
+        if exists(results_path):
+            sweep.results = pd.read_hdf(results_path, 'results')
+        return sweep
+
+    @staticmethod
+    def load(path):
+        """ Load batch from target <path>. """
+        with open(join(path, 'batch.pkl'), 'rb') as file:
+            batch = pickle.load(file)
+        batch.path = path
+        return batch
 
     @property
     def division(self):
@@ -31,15 +50,15 @@ class Sweep(Batch):
         return np.logspace(-2, 0, num=self.density, base=10)
 
     @property
-    def recombinant_fraction(self):
-        """ Fraction of growth period subject to recombination. """
-        magnitude = int(np.log2(self.population))
-        return np.logspace(-magnitude, 0, num=self.density, base=2)
+    def recombination_start(self):
+        """ Population size at which recombination begins. """
+        ubound = (self.population-self.recombination_duration)
+        return np.linspace(0, ubound, num=self.density)
 
     @property
     def grid(self):
         """ Meshgrid of division and recombination rates. """
-        return np.meshgrid(self.recombinant_fraction, self.recombination, indexing='xy')
+        return np.meshgrid(self.recombination_start, self.recombination, indexing='xy')
 
     def build_simulation(self, parameters, simulation_path, **kwargs):
         """
@@ -56,14 +75,14 @@ class Sweep(Batch):
         """
 
         # parse parameters
-        recombinant_fraction, recombination_rate  = parameters
-        recombinant_population = int(recombinant_fraction * self.population)
+        recombination_start, recombination_rate  = parameters
 
         # instantiate simulation
         simulation = GrowthSimulation(
             division=self.division_rate,
             recombination=recombination_rate,
-            recombinant_population=recombinant_population,
+            recombination_start=recombination_start,
+            recombination_duration=self.recombination_duration,
             final_population=self.population,
             **kwargs)
 
@@ -95,8 +114,8 @@ class Sweep(Batch):
                 'replicate': batch_id,
                 'division_rate': simulation.division,
                 'recombination_rate': simulation.recombination,
-                'recombinant_population': simulation.recombinant_population,
-                'recombinant_fraction': simulation.recombinant_population / simulation.final_population,
+                'recombination_start': simulation.recombination_start,
+                'recombination_duration': simulation.recombination_duration,
                 'population': simulation.size,
                 'transclone_edges': simulation.heterogeneity,
                 'percent_heterozygous': simulation.percent_heterozygous,
@@ -105,8 +124,6 @@ class Sweep(Batch):
 
             records.append(record)
 
-        # compile dataframe
-        data = pd.concat(records)
-
-        return data
-
+        # save results
+        self.results = pd.DataFrame(records)
+        self.results.to_hdf(join(self.path, 'data.hdf'), key='results')

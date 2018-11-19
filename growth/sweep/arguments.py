@@ -43,7 +43,7 @@ class RunArguments(ArgumentParser):
                '-s', '--save_history',
                help='Save growth history.',
                type=str2bool,
-               default=True,
+               default=False,
                required=False)
 
      def parse(self):
@@ -78,6 +78,13 @@ class SweepArguments(RunArguments):
                               help='Division rate.',
                               type=float,
                               default=0.1,
+                              required=False)
+
+          # add keyword argument for recombination duration
+          self.add_argument('-rd', '--recombination_duration',
+                              help='Duration of recombination period.',
+                              type=int,
+                              default=200,
                               required=False)
 
           # add keyword argument for sweep density
