@@ -189,11 +189,11 @@ class CultureVisualization:
 
 class Culture(CultureProperties, CultureVisualization):
 
-    def __init__(self, starter=None, fluorescence=None, scaling=1):
+    def __init__(self, starter=None, fluorescence=None, scaling=1, **kwargs):
 
         # seed with four heterozygous cells
         if starter is None:
-            starter = self.inoculate()
+            starter = self.inoculate(**kwargs)
         self.history = [starter]
 
         # set fluorescence model
@@ -251,9 +251,9 @@ class Culture(CultureProperties, CultureVisualization):
         return culture
 
     @staticmethod
-    def inoculate(N=2):
+    def inoculate(N=2, **kwargs):
         """ Inoculate with <N> generations of heterozygous cells. """
-        return Cell().grow(max_generation=N)
+        return Cell().grow(max_generation=N, **kwargs)
 
     def move(self, center=None, reference_population=1000):
         """

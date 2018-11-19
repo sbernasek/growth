@@ -14,7 +14,7 @@ class GrowthSimulation(Culture):
                  final_population=2**11,
                  **kwargs):
 
-        super().__init__(**kwargs)
+        super().__init__(recombination=recombination, **kwargs)
         self.division = division
         self.recombination = recombination
         self.recombinant_population = recombinant_population

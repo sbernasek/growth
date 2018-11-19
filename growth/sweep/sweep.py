@@ -8,7 +8,7 @@ from .simulation import GrowthSimulation
 class Sweep(Batch):
 
     def __init__(self,
-                 density=11,
+                 density=12,
                  batch_size=10,
                  division_rate=0.1,
                  population=2**12):
@@ -27,12 +27,13 @@ class Sweep(Batch):
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.logspace(-(self.density-1), 0, num=self.density, base=2)
+        return np.logspace(-2, 0, num=self.density, base=2)
 
     @property
     def recombinant_fraction(self):
         """ Fraction of growth period subject to recombination. """
-        return np.logspace(-(self.density-1), 0, num=self.density, base=2)
+        magnitude = int(np.log2(self.population))
+        return np.logspace(-magnitude, 0, num=self.density, base=2)
 
     @property
     def grid(self):
