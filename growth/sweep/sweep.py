@@ -28,7 +28,7 @@ class Sweep(Batch):
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.logspace(-2, 0, num=self.density, base=2)
+        return np.logspace(-2, 0, num=self.density, base=10)
 
     @property
     def recombinant_fraction(self):
