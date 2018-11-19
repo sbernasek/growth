@@ -1,5 +1,8 @@
+from os.path import isdir
+from os import mkdir
 import numpy as np
 from .batch import Batch
+from .simulation import GrowthSimulation
 
 
 class Sweep(Batch):
