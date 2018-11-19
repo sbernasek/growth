@@ -1,6 +1,7 @@
 from os.path import isdir
 from os import mkdir
 import numpy as np
+import pandas as pd
 from .batch import Batch
 from .simulation import GrowthSimulation
 
@@ -72,4 +73,40 @@ class Sweep(Batch):
 
         # save simulation
         simulation.save(simulation_path)
+
+    def aggregate(self):
+        """ Aggregate results from all sweeps. """
+
+        row_size = self.density*self.batch_size
+        col_size = self.batch_size
+
+        records = []
+        for index in range(self.N):
+            row_id = index // row_size
+            col_id = (index % row_size) // col_size
+            batch_id = (index % row_size) % col_size
+
+            # load simulation
+            simulation = self[index]
+
+            record = {
+                'row': row_id,
+                'column': col_id,
+                'replicate': batch_id,
+                'division_rate': simulation.division,
+                'recombination_rate': simulation.recombination,
+                'recombinant_population': simulation.recombinant_population,
+                'recombinant_fraction': simulation.recombinant_population / simulation.final_population,
+                'population': simulation.size,
+                'transclone_edges': simulation.heterogeneity,
+                'percent_heterozygous': simulation.percent_heterozygous,
+                'num_clones': simulation.clones.num_clones,
+                'clone_size_variation': simulation.clones.size_variation}
+
+            records.append(record)
+
+        # compile dataframe
+        data = pd.concat(records)
+
+        return data
 
