@@ -73,6 +73,20 @@ class SweepArguments(RunArguments):
                               default=10,
                               required=False)
 
+          # add keyword argument for sweep density
+          self.add_argument('-dr', '--division_rate',
+                              help='Division rate.',
+                              type=float,
+                              default=0.1,
+                              required=False)
+
+          # add keyword argument for sweep density
+          self.add_argument('-p', '--population',
+                              help='Final population.',
+                              type=int,
+                              default=2**12,
+                              required=False)
+
           # add keyword argument for project allocation
           self.add_argument('-w', '--walltime',
                               help='Estimated run time.',

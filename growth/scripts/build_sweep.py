@@ -7,11 +7,16 @@ from growth.sweep.sweep import Sweep
 args = SweepArguments(description='Parameter sweep arguments.')
 density = args['density']
 batch_size = args['batch_size']
+division_rate = args['division_rate']
+population = args['population']
 
 # ============================= RUN SCRIPT ====================================
 
 # instantiate sweep object
-sweep = Sweep(density=density, batch_size=batch_size)
+sweep = Sweep(density=density,
+              batch_size=batch_size,
+              division_rate=division_rate,
+              population=population)
 
 # build sweep
 sweep.build(

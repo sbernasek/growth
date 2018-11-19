@@ -7,8 +7,14 @@ from .simulation import GrowthSimulation
 
 class Sweep(Batch):
 
-    def __init__(self, density=11, batch_size=10):
+    def __init__(self,
+                 density=11,
+                 batch_size=10,
+                 division_rate=0.1,
+                 population=2**12):
         self.density = density
+        self.population = population
+        self.division_rate = division_rate
         parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
         parameters = np.repeat(parameters, repeats=batch_size, axis=0)
         super().__init__(parameters)
@@ -21,20 +27,19 @@ class Sweep(Batch):
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.linspace(0.0, 1., self.density)
+        return np.logspace(-(self.density-1), 0, num=self.density, base=2)
 
     @property
-    def recombination_duration(self):
+    def recombinant_fraction(self):
         """ Fraction of growth period subject to recombination. """
-        return np.linspace(0.0, 1., self.density)
+        return np.logspace(-(self.density-1), 0, num=self.density, base=2)
 
     @property
     def grid(self):
         """ Meshgrid of division and recombination rates. """
-        return np.meshgrid(self.recombination_duration, self.recombination, indexing='xy')
+        return np.meshgrid(self.recombinant_fraction, self.recombination, indexing='xy')
 
-    @classmethod
-    def build_simulation(cls, parameters, simulation_path, **kwargs):
+    def build_simulation(self, parameters, simulation_path, **kwargs):
         """
         Builds and saves a simulation instance for a set of parameters.
 
@@ -49,17 +54,15 @@ class Sweep(Batch):
         """
 
         # parse parameters
-        recombination_duration, recombination = parameters
+        recombinant_fraction, recombination_rate  = parameters
+        recombinant_population = int(recombinant_fraction * self.population)
 
         # instantiate simulation
-        final_population = 2**12
-        recombinant_population = recombination_duration*final_population
-
         simulation = GrowthSimulation(
-            division=1.0,
-            recombination=recombination,
+            division=self.division_rate,
+            recombination=recombination_rate,
             recombinant_population=recombinant_population,
-            final_population=final_population,
+            final_population=self.population,
             **kwargs)
 
         # create simulation directory

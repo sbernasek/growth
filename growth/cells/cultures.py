@@ -310,7 +310,10 @@ class Culture(CultureProperties, CultureVisualization):
         self.divide(division, recombination)
         self.move(reference_population=reference_population, **kwargs)
 
-    def grow(self, min_population=10, max_iters=None, **kwargs):
+    def grow(self,
+             min_population=10,
+             max_iters=None,
+             **kwargs):
         i = 0
         while self.size < min_population:
             self.update(**kwargs)
