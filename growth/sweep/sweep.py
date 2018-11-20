@@ -19,6 +19,7 @@ class Sweep(Batch):
         self.population = population
         self.division_rate = division_rate
         self.recombination_duration = recombination_duration
+        self.recombination_start = None
 
         parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
         parameters = np.repeat(parameters, repeats=batch_size, axis=0)
@@ -77,7 +78,6 @@ class Sweep(Batch):
 
         # parse parameters
         recombination_start, recombination_rate  = parameters
-        self.recombination_start = recombination_start
 
         # instantiate simulation
         simulation = GrowthSimulation(
