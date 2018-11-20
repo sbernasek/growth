@@ -10,11 +10,11 @@ from .simulation import GrowthSimulation
 class Sweep(Batch):
 
     def __init__(self,
-                 density=5,
+                 density=10,
                  batch_size=10,
                  division_rate=0.1,
                  recombination_duration=200,
-                 population=1000):
+                 population=2000):
         self.density = density
         self.population = population
         self.division_rate = division_rate
@@ -32,14 +32,6 @@ class Sweep(Batch):
             sweep.results = pd.read_hdf(results_path, 'results')
         return sweep
 
-    @staticmethod
-    def load(path):
-        """ Load batch from target <path>. """
-        with open(join(path, 'batch.pkl'), 'rb') as file:
-            batch = pickle.load(file)
-        batch.path = path
-        return batch
-
     @property
     def division(self):
         """ Division rate values.  """
@@ -48,13 +40,13 @@ class Sweep(Batch):
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.linspace(0.1, 0.5, num=self.density)
+        return np.linspace(0.1, 1., num=self.density)
 
     @property
     def recombination_start(self):
         """ Population size at which recombination begins. """
         #ubound = (self.population-self.recombination_duration)
-        ubound = int(0.3 * self.population)
+        ubound = int(.9 * self.population)
         return np.linspace(0, ubound, num=self.density)
 
     @property

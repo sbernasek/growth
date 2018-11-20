@@ -76,8 +76,8 @@ class CultureProperties:
     @property
     def heterogeneity(self):
         """ Returns fraction of edges that connect differing genotypes. """
-        G = self.xy_graph
-        num_edges = np.not_equal(*self.genotypes[np.array(G.edges)].T).sum()
+        edges = np.array(self.xy_graph.edges)
+        num_edges = np.not_equal(*self.genotypes[edges].T).sum()
         return num_edges / self.size
 
     @property
