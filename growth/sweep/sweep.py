@@ -10,7 +10,7 @@ from .simulation import GrowthSimulation
 class Sweep(Batch):
 
     def __init__(self,
-                 density=10,
+                 density=5,
                  batch_size=10,
                  division_rate=0.1,
                  recombination_duration=200,
@@ -48,12 +48,13 @@ class Sweep(Batch):
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.linspace(0.1, 1., num=self.density)
+        return np.linspace(0.1, 0.5, num=self.density)
 
     @property
     def recombination_start(self):
         """ Population size at which recombination begins. """
-        ubound = (self.population-self.recombination_duration)
+        #ubound = (self.population-self.recombination_duration)
+        ubound = int(0.3 * self.population)
         return np.linspace(0, ubound, num=self.density)
 
     @property
