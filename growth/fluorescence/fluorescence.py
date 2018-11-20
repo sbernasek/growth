@@ -62,8 +62,7 @@ class Fluorescence:
         size = genotypes.size
         sample = np.random.gamma(shape(genotypes),
                                  scale=scale(genotypes),
-                                 loc=loc(genotypes),
-                                 size=size)
+                                 size=size) + loc(genotypes)
         return sample
 
     def show_pdf(self, xlim=(0, 1)):

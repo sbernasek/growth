@@ -135,7 +135,7 @@ class CultureProperties:
     @property
     def clones(self):
         """ Clones instance. """
-        data = {genotype: self.parse_clones(genotype) for genotype in range(3)}
+        data = {genotype: self.parse_clones(genotype) for genotype in [0, 2]}
         return Clones(data)
 
 

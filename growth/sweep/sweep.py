@@ -2,6 +2,7 @@ from os.path import isdir, exists, join
 from os import mkdir
 import numpy as np
 import pandas as pd
+import pickle
 from .batch import Batch
 from .simulation import GrowthSimulation
 
@@ -47,7 +48,7 @@ class Sweep(Batch):
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.logspace(-2, 0, num=self.density, base=10)
+        return np.linspace(0.1, 1., num=self.density)
 
     @property
     def recombination_start(self):
@@ -76,6 +77,7 @@ class Sweep(Batch):
 
         # parse parameters
         recombination_start, recombination_rate  = parameters
+        self.recombination_start = recombination_start
 
         # instantiate simulation
         simulation = GrowthSimulation(

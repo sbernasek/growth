@@ -30,4 +30,4 @@ class Clones:
         return np.std(sizes) / np.mean(sizes)
 
     def apply(self, func, join):
-        return reduce(join, [func(self.data[x]) for x in range(self.num_genotypes)])
+        return reduce(join, [func(self.data[x]) for x in [0, 2]])
