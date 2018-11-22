@@ -63,14 +63,14 @@ class SweepArguments(RunArguments):
           self.add_argument('-d', '--density',
                               help='Parameter range density.',
                               type=int,
-                              default=11,
+                              default=6,
                               required=False)
 
           # add keyword argument for sweep density
           self.add_argument('-b', '--batch_size',
                               help='Replicates per parameter set.',
                               type=int,
-                              default=10,
+                              default=1,
                               required=False)
 
           # add keyword argument for sweep density
@@ -84,14 +84,14 @@ class SweepArguments(RunArguments):
           self.add_argument('-rd', '--recombination_duration',
                               help='Duration of recombination period.',
                               type=int,
-                              default=200,
+                              default=8,
                               required=False)
 
           # add keyword argument for sweep density
           self.add_argument('-p', '--population',
                               help='Final population.',
                               type=int,
-                              default=2**12,
+                              default=11,
                               required=False)
 
           # add keyword argument for project allocation
