@@ -13,7 +13,7 @@ class Sweep(Batch):
                  density=5,
                  batch_size=10,
                  division_rate=0.1,
-                 recombination_duration=8,
+                 recombination_duration=4,
                  population=11):
         self.density = density
         self.population = population
@@ -41,7 +41,7 @@ class Sweep(Batch):
     def recombination(self):
         """ Recombination rate values.  """
         #return np.linspace(0.1, 1., num=self.density)
-        return np.logspace(-5, -1, num=self.density, base=2)
+        return np.logspace(-5, 0, num=self.density, base=2)
 
     @property
     def recombination_start(self):
@@ -49,7 +49,7 @@ class Sweep(Batch):
         #ubound = (self.population-self.recombination_duration)
         #ubound = int(.9 * self.population)
         #return np.linspace(0, ubound, num=self.density)
-        return np.arange(self.density)
+        return np.arange((self.population-self.recombination_duration)+1)
 
     @property
     def grid(self):
