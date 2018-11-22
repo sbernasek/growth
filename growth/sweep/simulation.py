@@ -4,6 +4,7 @@ from functools import reduce
 from operator import add
 
 from ..cells.cultures import Culture
+from ..cells.cells import Cell
 
 
 class GrowthSimulation(Culture):
@@ -17,7 +18,7 @@ class GrowthSimulation(Culture):
                  **kwargs):
 
         # define seed
-        seed = [Cell(**kwargs)]
+        seed = [Cell()]
         for generation in range(2):
             if recombination_start == generation:
                 seed = reduce(add, [c.grow(recombination=recombination) for c in seed])
