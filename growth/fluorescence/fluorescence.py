@@ -3,7 +3,7 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 
 
-class Fluorescence:
+class FluorescenceGamma:
 
     def __init__(self, shape=(0.5, 5, 15), scale=1, loc=0, density=100000):
         self.set_shape(shape)
@@ -14,11 +14,6 @@ class Fluorescence:
     def __call__(self, genotypes):
         """ Draw luminescence samples for <genotypes>. """
         return self.sample(genotypes)
-
-    @property
-    def saturation(self):
-        """ Upper bound on support. """
-        return st.gamma(self.shape[2], scale=self.scale[2]).ppf(0.999)
 
     @property
     def pdf(self):
@@ -41,17 +36,7 @@ class Fluorescence:
         otypes = [np.float64]
         self.shape = shape
 
-    def set_scale(self, scale):
-        """ Set scale parameters. """
-        if type(scale) in (int, float):
-            scale = (scale,)*3
-        self.scale = scale
 
-    def set_loc(self, loc):
-        """ Set loc parameters. """
-        if type(loc) in (int, float):
-            loc = (loc,)*3
-        self.loc = loc
 
     def freeze_univariate(self, i):
         """ Returns frozen model for <i>th univariate distribution. """
@@ -93,17 +78,36 @@ class Fluorescence:
         ax.set_ylim(*ylim)
 
 
-class FluorescenceLogNormal(Fluorescence):
+class FluorescenceLogNormal(FluorescenceGamma):
 
     def __init__(self, mu=(0, 3, 4), sigma=(1, .3, .3), density=100000):
         self.set_loc(sigma)
         self.set_scale(mu)
         self.support = np.linspace(0, self.saturation, num=density)
 
+    @classmethod
+    def from_scale(cls, scale=20):
+        """ Instantiate fluorescence model from <scale>. """
+        loc = (1, scale, 2*scale)
+        sigma = (1., 1./scale, 1./scale)
+        return cls(mu=np.log(loc), sigma=sigma)
+
     @property
     def saturation(self):
         """ Upper bound on support. """
         return st.lognorm(self.loc[2], scale=np.exp(self.scale[2])).ppf(0.999)
+
+    def set_scale(self, scale):
+        """ Set scale parameters. """
+        if type(scale) in (int, float):
+            scale = (scale,)*3
+        self.scale = scale
+
+    def set_loc(self, loc):
+        """ Set loc parameters. """
+        if type(loc) in (int, float):
+            loc = (loc,)*3
+        self.loc = loc
 
     def freeze_univariate(self, i):
         """ Returns frozen model for <i>th univariate distribution. """
@@ -120,3 +124,6 @@ class FluorescenceLogNormal(Fluorescence):
             sigma=loc(genotypes),
             size=size)
         return sample
+
+
+class

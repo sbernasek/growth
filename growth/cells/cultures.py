@@ -10,7 +10,7 @@ from matplotlib.colors import Normalize
 from .clones import Clones
 from .phylogeny import Phylogeny
 from ..spatial.triangulation import LocalTriangulation
-from ..fluorescence.fluorescence import Fluorescence
+from ..fluorescence.fluorescence import FluorescenceLogNormal
 from ..visualization.animation import Animation
 from .cells import Cell
 
@@ -198,7 +198,7 @@ class Culture(CultureProperties, CultureVisualization):
 
         # set fluorescence model
         if fluorescence is None:
-            fluorescence = Fluorescence()
+            fluorescence = FluorescenceLogNormal.from_scale(10)
         self.fluorescence = fluorescence
 
         # set population size scaling
@@ -232,13 +232,14 @@ class Culture(CultureProperties, CultureVisualization):
 
         culture = self.__class__()
 
+        # assign history to culture
         if t is None:
             culture.history = self.history[:]
-            culture.fluorescence = deepcopy(self.fluorescence)
-
         else:
             culture.history = self.history[:t+1]
-            culture.fluorescence = deepcopy(self.fluorescence)
+
+        # copy fluorescence model to culture
+        culture.fluorescence = deepcopy(self.fluorescence)
 
         return culture
 

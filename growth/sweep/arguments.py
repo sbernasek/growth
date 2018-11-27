@@ -84,7 +84,7 @@ class SweepArguments(RunArguments):
           self.add_argument('-rd', '--recombination_duration',
                               help='Duration of recombination period.',
                               type=int,
-                              default=8,
+                              default=4,
                               required=False)
 
           # add keyword argument for sweep density
