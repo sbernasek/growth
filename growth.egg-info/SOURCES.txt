@@ -11,8 +11,8 @@ growth/cells/cells.py
 growth/cells/clones.py
 growth/cells/cultures.py
 growth/cells/phylogeny.py
-growth/fluorescence/__init__.py
-growth/fluorescence/fluorescence.py
+growth/measure/__init__.py
+growth/measure/fluorescence.py
 growth/scripts/__init__.py
 growth/scripts/build_sweep.py
 growth/scripts/run_batch.py

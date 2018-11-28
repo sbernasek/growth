@@ -4,13 +4,14 @@ import numpy as np
 from functools import reduce
 from operator import add
 import networkx as nx
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
 from .clones import Clones
 from .phylogeny import Phylogeny
 from ..spatial.triangulation import LocalTriangulation
-from ..fluorescence.fluorescence import FluorescenceLogNormal
+from ..measure.fluorescence import Fluorescence
 from ..visualization.animation import Animation
 from .cells import Cell
 
@@ -40,11 +41,6 @@ class CultureProperties:
     def genotypes(self):
         """ Cell genotypes. """
         return np.array([cell.genotype for cell in self.cells])
-
-    @property
-    def phenotypes(self):
-        """ Sampled cell phenotypes. """
-        return self.fluorescence(self.genotypes)
 
     @property
     def xy_dict(self):
@@ -164,9 +160,6 @@ class CultureVisualization:
         if colorby == 'genotype':
             norm = Normalize(0, 2)
             c = cmap(norm(self.genotypes))
-        elif colorby == 'phenotype':
-            norm = Normalize(0, 1)
-            c = cmap(norm(self.phenotypes))
         elif colorby == 'lineage':
             norm = Normalize(-1, 1)
             c = cmap(norm(self.diversification))
@@ -187,19 +180,26 @@ class CultureVisualization:
         ax.scatter(*self.xy.T, s=s, lw=0, c=c)
 
 
-class Culture(CultureProperties, CultureVisualization):
+class CultureMeasurements:
+    """ Methods for generating fluorescence measurements. """
 
-    def __init__(self, starter=None, fluorescence=None, scaling=1, **kwargs):
+    def measure(self, scale=10):
+        """ Returns clones-compatible dataframe. """
+        fluorescence = Fluorescence.from_scale(scale)
+        df = pd.DataFrame(self.xy, columns=['centroid_x', 'centroid_y'])
+        df['ground'] = self.genotypes
+        df['r'] = fluorescence(self.genotypes)
+        return df
+
+
+class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
+
+    def __init__(self, starter=None, scaling=1, **kwargs):
 
         # seed with four heterozygous cells
         if starter is None:
             starter = self.inoculate(**kwargs)
         self.history = [starter]
-
-        # set fluorescence model
-        if fluorescence is None:
-            fluorescence = FluorescenceLogNormal.from_scale(10)
-        self.fluorescence = fluorescence
 
         # set population size scaling
         self.scaling = scaling
@@ -238,9 +238,6 @@ class Culture(CultureProperties, CultureVisualization):
         else:
             culture.history = self.history[:t+1]
 
-        # copy fluorescence model to culture
-        culture.fluorescence = deepcopy(self.fluorescence)
-
         return culture
 
     def freeze(self, t):
@@ -248,7 +245,6 @@ class Culture(CultureProperties, CultureVisualization):
         cells = self.history[t]
         culture = self.__class__(scaling=float(len(cells))/self.size)
         culture.history = [cells]
-        culture.fluorescence = deepcopy(self.fluorescence)
         return culture
 
     @staticmethod
