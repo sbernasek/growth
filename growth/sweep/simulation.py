@@ -25,7 +25,12 @@ class GrowthSimulation(Culture):
             else:
                 seed = reduce(add, [c.grow(recombination=0.) for c in seed])
 
-        super().__init__(starter=seed, **kwargs)
+        # instantiate culture
+        super().__init__(starter=seed,
+                         reference_population=2**final_population,
+                         **kwargs)
+
+        # store additional properties
         self.division = division
         self.recombination = recombination
         self.recombination_start = recombination_start
@@ -58,20 +63,17 @@ class GrowthSimulation(Culture):
         # growth before recombination
         self.grow(min_population=pop0,
                  division=self.division,
-                 recombination=0.,
-                 reference_population=pop2)
+                 recombination=0.)
 
         # growth with recombination
         self.grow(min_population=pop1,
                  division=self.division,
-                 recombination=self.recombination,
-                 reference_population=pop2)
+                 recombination=self.recombination)
 
         # growth after recombination
         self.grow(min_population=pop2,
                  division=self.division,
-                 recombination=0.,
-                 reference_population=pop2)
+                 recombination=0.)
 
     def branch(self, t=None):
         """ Returns copy of culture at generation <t> including history. """

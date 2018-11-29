@@ -32,6 +32,15 @@ class Sweep(Batch):
             sweep.results = pd.read_hdf(results_path, 'results')
         return sweep
 
+    def load_batch(self, batch_id):
+        """ Returns batch of simulations. """
+        return [self.load_simulation(i) for i in self.batches[batch_id]]
+
+    @property
+    def batches(self):
+        """ Simulation IDs for each batch. """
+        return np.arange(self.N).reshape(-1, self.batch_size)
+
     @property
     def division(self):
         """ Division rate values.  """

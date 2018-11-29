@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib.tri import Triangulation
+from scipy.spatial import ConvexHull
 
 
 class LocalTriangulation(Triangulation):
@@ -20,10 +21,19 @@ class LocalTriangulation(Triangulation):
         # set max_length attribute
         self.max_length = max_length
 
-        # sort edges
-        sort_indices = np.argsort(edge_lengths)
-        self.edge_list = edge_list[sort_indices]
-        self.edge_lengths = edge_lengths[sort_indices]
+        # store edges
+        self.edge_list = edge_list
+        self.edge_lengths = edge_lengths
+
+    @property
+    def hull(self):
+        """ Convex hull. """
+        return ConvexHull(np.vstack((self.x, self.y)).T)
+
+    @property
+    def num_triangles(self):
+        """ Number of triangles. """
+        return self.triangles.shape[0]
 
     @property
     def nodes(self):
@@ -33,13 +43,16 @@ class LocalTriangulation(Triangulation):
     @property
     def edges(self):
         """ Filtered edges. """
-        return self.filter_edges(self.nodes, self.edge_list, self.edge_lengths, max_length=self.max_length)
+        #return self.filter_edges(self.nodes, self.edge_list, self.edge_lengths, max_length=self.max_length)
+        return self.filter_outliers(self.nodes, self.edge_list, self.edge_lengths)
+        #return self.filter_hull(self.edge_list)
+        #return self.filter_longest_edge(self.edge_list, self.edge_lengths)
 
     def compile_edge_list(self):
         """ Returns list of (node_from, node_to) tuples. """
         edges = []
         for i in range(3):
-            edges += list(zip(self.triangles[:, i], self.triangles[:, (i+1)%3]))
+            edges += list(zip(self.triangles[:, i], self.triangles[:,(i+1)%3]))
         return np.array(edges)
 
     @staticmethod
@@ -62,6 +75,11 @@ class LocalTriangulation(Triangulation):
     def filter_edges(cls, nodes, edges, lengths, max_length=0.1):
         """ Returns all edges less than <max_length>, with at least one edge containing each node. """
 
+        # sort edges
+        sort_indices = np.argsort(lengths)
+        edges = edges[sort_indices]
+        lengths = lengths[sort_indices]
+
         mask = (lengths <= max_length)
         rejected, accepted = edges[~mask], edges[mask]
 
@@ -76,65 +94,77 @@ class LocalTriangulation(Triangulation):
 
         return accepted
 
+    @classmethod
+    def filter_outliers(cls, nodes, edges, lengths):
+        """ Returns all edges whose lengths are not outliers, with at least one edge containing each node. """
 
+        # sort edges
+        sort_indices = np.argsort(lengths)
+        edges = edges[sort_indices]
+        lengths = lengths[sort_indices]
 
+        mask = ~cls.is_outlier(lengths)
 
-# class LocalTriangulation(Triangulation):
-#     """
-#     Triangulation with edge distance filter.
+        rejected, accepted = edges[~mask], edges[mask]
 
-#     """
+        # find disconnected nodes
+        disconnected = cls.find_disconnected_nodes(nodes, accepted)
 
-#     def __init__(self, *args, q=100, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         #self.filter_triangles(q)
+        # add shortest edge for each disconnected node
+        if disconnected.size > 0:
+            f = np.vectorize(lambda node: cls.find_first_edge(rejected, node))
+            connecting = rejected[f(disconnected)]
+            accepted = np.vstack((accepted, connecting))
 
-#     @property
-#     def edges(self):
-#         return self.filter_edges(max_length=0.1)
+        return accepted
 
-#     @property
-#     def disconnected(self):
-#         """ Disconnected nodes. """
-#         all_nodes = np.unique(self.triangles)
-#         included_nodes = np.unique(self.triangles[self.mask])
-#         return set(all_nodes).difference(included_nodes)
+    def filter_hull(self, edges):
+        """ Returns all edges not on the convex hull. """
+        hull_edges = np.sort(self.hull.simplices, axis=1)
+        on_hull = np.isin(np.sort(edges, axis=1), hull_edges).all(axis=1)
+        return edges[~on_hull]
 
-#     def _evaluate_edge_lengths(self):
-#         """ Returns max edge length per triangle. """
-#         merge = lambda x: np.hstack((x, x.sum(axis=1).reshape(-1, 1)))
-#         dx = np.diff(self.x[self.triangles], axis=1)
-#         dy = np.diff(self.y[self.triangles], axis=1)
-#         return np.sqrt((merge(dx)**2) + (merge(dy)**2))
+    def filter_longest_edge(self, edges, edge_lengths):
+        """ Returns all edges except the longest edge in each triangle. """
+        accepted_edges = []
+        for tri in range(self.num_triangles):
+            ind = np.argsort(edge_lengths[tri::self.num_triangles])[:-1]
+            accepted_edges.append(edges[tri::self.num_triangles][ind])
+        return np.vstack(accepted_edges)
 
-#     def _evaluate_max_edge_lengths(self):
-#         """ Returns max edge length per triangle. """
-#         return self._evaluate_edge_lengths().max(axis=1)
+    @staticmethod
+    def is_outlier(points, thresh=2.):
+        """
+        Returns a boolean array with True if points are outliers and False
+        otherwise.
 
-#     def filter_triangles(self, q=95):
-#         """
-#         Mask edges with lengths exceeding specified quantile.
+        Parameters:
+        -----------
+            points : An numobservations by numdimensions array of observations
+            thresh : The modified z-score to use as a threshold. Observations with
+                a modified z-score (based on the median absolute deviation) greater
+                than this value will be classified as outliers.
 
-#         Args:
+        Returns:
+        --------
+            mask : A numobservations-length boolean array.
 
-#             q (float) - length quantile, 0 to 100
+        References:
+        ----------
+            Boris Iglewicz and David Hoaglin (1993), "Volume 16: How to Detect and
+            Handle Outliers", The ASQC Basic References in Quality Control:
+            Statistical Techniques, Edward F. Mykytka, Ph.D., Editor.
+        """
+        if len(points.shape) == 1:
+            points = points[:,None]
+        median = np.median(points, axis=0)
+        diff = np.sum((points - median)**2, axis=-1)
+        diff = np.sqrt(diff)
+        med_abs_deviation = np.median(diff)
 
-#         """
-#         max_lengths = self._evaluate_max_edge_lengths()
-#         mask = max_lengths > np.percentile(max_lengths, q=q)
-#         self.set_mask(mask)
+        modified_z_score = 0.6745 * diff / med_abs_deviation
 
-#     def filter_edges(self, max_length=0.1):
+        # exclude lower bound
+        modified_z_score[points.ravel()<median] = 0
 
-#         # build accepted edge mask
-#         mask = self._evaluate_edge_lengths() <= max_length
-
-#         # define filter function
-#         node = lambda x, y: self.triangles[mask[:, x], y]
-
-#         # filter edges
-#         edges = []
-#         for i in range(3):
-#             edges += list(zip(node(i, i), node(i, (i+1)%3)))
-
-#         return edges
+        return modified_z_score > thresh

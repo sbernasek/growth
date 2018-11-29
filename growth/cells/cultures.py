@@ -34,6 +34,21 @@ class CultureProperties:
         return len(self.cells)
 
     @property
+    def radius(self):
+        """ Approximate colony radius. """
+        return (self.size/self.reference_population/np.pi)**0.5
+
+    @property
+    def circumference(self):
+        """ Approximate colony circumference. """
+        return 2 * np.pi * self.radius
+
+    @property
+    def cell_radius(self):
+        """ Mean half-distance between adjacent cells. """
+        return ((1/self.reference_population)**0.5)
+
+    @property
     def generation(self):
         return len(self.history) - 1
 
@@ -55,7 +70,9 @@ class CultureProperties:
     @property
     def triangulation(self):
         """ Delaunay triangulation with edge-length filtering. """
-        return LocalTriangulation(*self.xy.T, max_length=0.1)
+        max_length = self.cell_radius * 3
+        max_length = 0.1
+        return LocalTriangulation(*self.xy.T, max_length=max_length)
 
     @property
     def xy_graph(self):
@@ -194,7 +211,17 @@ class CultureMeasurements:
 
 class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
 
-    def __init__(self, starter=None, scaling=1, **kwargs):
+    def __init__(self,
+                 starter=None,
+                 scaling=1,
+                 reference_population=1000,
+                 **kwargs):
+        """
+        Args:
+
+            reference_population (int) - number of cells in unit circle
+
+        """
 
         # seed with four heterozygous cells
         if starter is None:
@@ -203,6 +230,7 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
 
         # set population size scaling
         self.scaling = scaling
+        self.reference_population = reference_population
 
     def __add__(self, b):
         return self.__class__(self.cells + b.cells)
@@ -230,7 +258,9 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
     def branch(self, t=None):
         """ Returns copy of culture at generation <t> including history. """
 
-        culture = self.__class__()
+        culture = self.__class__(
+            scaling=self.scaling,
+            reference_population=self.reference_population)
 
         # assign history to culture
         if t is None:
@@ -252,15 +282,13 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
         """ Inoculate with <N> generations of heterozygous cells. """
         return Cell().grow(max_generation=N, **kwargs)
 
-    def move(self, center=None, reference_population=1000):
+    def move(self, center=None):
         """
         Update cell positions.
 
         Args:
 
             center (np.ndarray[float]) - center position
-
-            reference_population (int) - number of cells in unit circle
 
         """
 
@@ -269,7 +297,7 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
            center = np.zeros(2, dtype=float)
 
         # determine scaling (colony radius)
-        radius = np.sqrt(self.size/reference_population)
+        radius = np.sqrt(self.size/self.reference_population)
 
         # run relaxation
         xy_dict = nx.kamada_kawai_layout(
@@ -301,11 +329,10 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
     def update(self,
                division=0.1,
                recombination=0.1,
-               reference_population=1000,
                **kwargs):
         self.history.append([])
         self.divide(division, recombination)
-        self.move(reference_population=reference_population, **kwargs)
+        self.move(**kwargs)
 
     def grow(self,
              min_population=10,
