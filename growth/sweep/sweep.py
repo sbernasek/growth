@@ -25,7 +25,6 @@ class SweepProperties:
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        #return np.linspace(0.1, 1., num=self.density)
         return np.logspace(-5, 0, num=self.density, base=2)
 
     @property

@@ -26,4 +26,6 @@ sweep.build(
     directory=args['path'],
     save_history=args['save_history'],
     walltime=args['walltime'],
+    cores=args['cores'],
+    memory=args['memory'],
     allocation=args['allocation'])

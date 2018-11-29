@@ -139,7 +139,9 @@ class Job:
                                 script_name,
                                 save_history=True,
                                 walltime=10,
-                                allocation='p30653'):
+                                allocation='p30653',
+                                cores=1,
+                                memory=4):
         """
         Writes job submission script for QUEST.
 
@@ -154,6 +156,10 @@ class Job:
             walltime (int) - estimated job run time
 
             allocation (str) - project allocation, e.g. p30653 (comp. bio)
+
+            cores (int) - number of cores per batch
+
+            memory (int) - memory per batch, GB
 
         """
 
@@ -197,8 +203,8 @@ class Job:
         job_script.write('#MSUB -o ./log/${b_id}/outlog \n')
         job_script.write('#MSUB -e ./log/${b_id}/errlog \n')
         job_script.write('#MSUB -N ${b_id} \n')
-        job_script.write('#MSUB -l nodes=1:ppn=1 \n')
-        job_script.write('#MSUB -l mem=1gb \n\n')
+        job_script.write('#MSUB -l nodes=1:ppn={:d} \n'.format(cores))
+        job_script.write('#MSUB -l mem={:d}gb \n\n'.format(memory))
 
         # load python module and metabolism virtual environment
         job_script.write('module load python/anaconda3.6\n')
@@ -305,6 +311,8 @@ class Job:
               save_history=True,
               walltime=10,
               allocation='p30653',
+              cores=1,
+              memory=4,
               **sim_kw):
         """
         Build job directory tree. Instantiates and saves a simulation instance for each parameter set, then generates a single shell script to submit each simulation as a separate job.
@@ -318,6 +326,10 @@ class Job:
             walltime (int) - estimated job run time
 
             allocation (str) - project allocation
+
+            cores (int) - number of cores per batch
+
+            memory (int) - memory per batch, GB
 
             sim_kw (dict) - keyword arguments for simulation
 
@@ -352,7 +364,9 @@ class Job:
                                      self.script_name,
                                      save_history,
                                      walltime=walltime,
-                                     allocation=allocation)
+                                     allocation=allocation,
+                                     cores=cores,
+                                     memory=memory)
 
     @classmethod
     def build_simulation(cls, parameters, simulation_path, **kwargs):

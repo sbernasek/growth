@@ -94,11 +94,25 @@ class SweepArguments(RunArguments):
                               default=11,
                               required=False)
 
-          # add keyword argument for project allocation
+          # add keyword argument for estimated run time
           self.add_argument('-w', '--walltime',
                               help='Estimated run time.',
                               type=int,
                               default=10,
+                              required=False)
+
+          # add keyword argument for number of cores
+          self.add_argument('-c', '--cores',
+                              help='Number of cores.',
+                              type=int,
+                              default=1,
+                              required=False)
+
+          # add keyword argument for memory usage
+          self.add_argument('-m', '--memory',
+                              help='Memory usage.',
+                              type=int,
+                              default=4,
                               required=False)
 
           # add keyword argument for project allocation
