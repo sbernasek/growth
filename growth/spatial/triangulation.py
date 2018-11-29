@@ -133,7 +133,7 @@ class LocalTriangulation(Triangulation):
         return np.vstack(accepted_edges)
 
     @staticmethod
-    def is_outlier(points, thresh=2.):
+    def is_outlier(points, thresh=3.):
         """
         Returns a boolean array with True if points are outliers and False
         otherwise.
