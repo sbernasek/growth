@@ -14,6 +14,7 @@ growth/cells/phylogeny.py
 growth/measure/__init__.py
 growth/measure/fluorescence.py
 growth/scripts/__init__.py
+growth/scripts/aggregate.py
 growth/scripts/build_sweep.py
 growth/scripts/run_batch.py
 growth/scripts/run_simulation.py
@@ -21,7 +22,7 @@ growth/spatial/__init__.py
 growth/spatial/triangulation.py
 growth/sweep/__init__.py
 growth/sweep/arguments.py
-growth/sweep/batch.py
+growth/sweep/jobs.py
 growth/sweep/simulation.py
 growth/sweep/sweep.py
 growth/visualization/__init__.py

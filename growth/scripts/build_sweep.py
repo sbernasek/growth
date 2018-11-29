@@ -6,7 +6,7 @@ from growth.sweep.sweep import Sweep
 
 args = SweepArguments(description='Parameter sweep arguments.')
 density = args['density']
-batch_size = args['batch_size']
+replicates = args['batch_size']
 recombination_duration = args['recombination_duration']
 division_rate = args['division_rate']
 population = args['population']
@@ -16,7 +16,7 @@ population = args['population']
 
 # instantiate sweep object
 sweep = Sweep(density=density,
-              batch_size=batch_size,
+              replicates=replicates,
               recombination_duration=recombination_duration,
               division_rate=division_rate,
               population=population)
@@ -24,7 +24,6 @@ sweep = Sweep(density=density,
 # build sweep
 sweep.build(
     directory=args['path'],
-    batch_size=args['batch_size'],
     save_history=args['save_history'],
     walltime=args['walltime'],
     allocation=args['allocation'])

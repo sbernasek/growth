@@ -3,43 +3,19 @@ from os import mkdir
 import numpy as np
 import pandas as pd
 import pickle
-from .batch import Batch
+from .jobs import Job
 from .simulation import GrowthSimulation
 
 
-class Sweep(Batch):
-
-    def __init__(self,
-                 density=5,
-                 batch_size=10,
-                 division_rate=0.1,
-                 recombination_duration=4,
-                 population=11):
-        self.density = density
-        self.population = population
-        self.division_rate = division_rate
-        self.recombination_duration = recombination_duration
-
-        parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
-        parameters = np.repeat(parameters, repeats=batch_size, axis=0)
-        super().__init__(parameters)
-
-    @classmethod
-    def load(cls, path):
-        sweep = super().load(path)
-        results_path = join(path, 'data.hdf')
-        if exists(results_path):
-            sweep.results = pd.read_hdf(results_path, 'results')
-        return sweep
-
-    def load_batch(self, batch_id):
-        """ Returns batch of simulations. """
-        return [self.load_simulation(i) for i in self.batches[batch_id]]
+class SweepProperties:
+    """
+    Properties for parameter sweep.
+    """
 
     @property
-    def batches(self):
-        """ Simulation IDs for each batch. """
-        return np.arange(self.N).reshape(-1, self.batch_size)
+    def shape(self):
+        """ Parameter sweep dimensions. """
+        return self.grid[0].shape
 
     @property
     def division(self):
@@ -55,15 +31,41 @@ class Sweep(Batch):
     @property
     def recombination_start(self):
         """ Population size at which recombination begins. """
-        #ubound = (self.population-self.recombination_duration)
-        #ubound = int(.9 * self.population)
-        #return np.linspace(0, ubound, num=self.density)
         return np.arange((self.population-self.recombination_duration)+1)
 
     @property
     def grid(self):
         """ Meshgrid of division and recombination rates. """
         return np.meshgrid(self.recombination_start, self.recombination, indexing='xy')
+
+
+class Sweep(Job, SweepProperties):
+    """
+    Class for performing a parameter sweep.
+    """
+
+    def __init__(self,
+                 density=5,
+                 replicates=10,
+                 division_rate=0.1,
+                 recombination_duration=4,
+                 population=11):
+        self.density = density
+        self.population = population
+        self.division_rate = division_rate
+        self.recombination_duration = recombination_duration
+
+        parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
+        parameters = np.repeat(parameters, repeats=replicates, axis=0)
+        super().__init__(parameters, batch_size=replicates)
+
+    @classmethod
+    def load(cls, path):
+        sweep = super().load(path)
+        results_path = join(path, 'data.hdf')
+        if exists(results_path):
+            sweep.results = pd.read_hdf(results_path, 'results')
+        return sweep
 
     def build_simulation(self, parameters, simulation_path, **kwargs):
         """

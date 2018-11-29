@@ -10,15 +10,15 @@ from datetime import datetime
 from .simulation import GrowthSimulation
 
 
-class Batch:
+class Job:
     """
-    Class defines a collection of batch job submissions for Quest.
+    Class defines a collection of job submissions for Quest.
 
     Attributes:
 
-        path (str) - path to batch directory
+        path (str) - path to job directory
 
-        script_name (str) - name of script for running batch
+        script_name (str) - name of script for running job
 
         parameters (iterable) - parameter sets
 
@@ -31,18 +31,23 @@ class Batch:
         N (int) - number of samples in parameter space
 
     """
-    def __init__(self, parameters):
+    def __init__(self, parameters, batch_size=10, script_name='run_job.py'):
         """
-        Instantiate batch of jobs.
+        Instantiate job.
 
         Args:
 
-            parameters (iterable) - each entry is a parameter set that defines a simulation. Parameter sets are passed to the build_model method.
+            parameters (iterable) - Each entry is a parameter set that defines a simulation. Parameter sets are passed to the build_model method.
+
+            batch_size (int) - number of simulations per batch
+
+            script_name (str) - name of run script
 
         """
         self.simulation_paths = {}
         self.parameters = parameters
-        self.script_name = 'run_batch.py'
+        self.script_name = script_name
+        self.batch_size = batch_size
 
     def __getitem__(self, index):
         """ Returns simulation instance. """
@@ -67,13 +72,19 @@ class Batch:
         """ Number of samples in parameter space. """
         return len(self.parameters)
 
+    @property
+    def batches(self):
+        """ Simulation IDs for each batch. """
+        b = self.batch_size
+        return [np.arange(i*b, i*b+b) for i in range(1+self.N//b)]
+
     @staticmethod
     def load(path):
-        """ Load batch from target <path>. """
-        with open(join(path, 'batch.pkl'), 'rb') as file:
-            batch = pickle.load(file)
-        batch.path = path
-        return batch
+        """ Load job from target <path>. """
+        with open(join(path, 'job.pkl'), 'rb') as file:
+            job = pickle.load(file)
+        job.path = path
+        return job
 
     @staticmethod
     def build_run_script(path, script_name, save_history):
@@ -103,7 +114,7 @@ class Batch:
         job_script = open(job_script_path, 'w')
         job_script.write('#!/bin/bash\n')
 
-        # move to batch directory
+        # move to job directory
         job_script.write('cd {:s} \n\n'.format(path))
 
         # run each batch
@@ -114,7 +125,7 @@ class Batch:
         args = (save_history,)
         job_script.write('-s {:d}\n'.format(*args))
         job_script.write('done < ./batches/index.txt \n')
-        job_script.write('echo "Completed all batches at `date`"\n')
+        job_script.write('echo "Job completed at `date`"\n')
         job_script.write('exit\n')
 
         # close the file
@@ -167,10 +178,10 @@ class Batch:
         job_script = open(job_script_path, 'w')
         job_script.write('#!/bin/bash\n')
 
-        # move to batch directory
+        # move to job directory
         job_script.write('cd {:s} \n\n'.format(path))
 
-        # begin outer script for processing batch
+        # begin outer script for processing job
         job_script.write('while IFS=$\'\\t\' read P\n')
         job_script.write('do\n')
         job_script.write('b_id=$(echo $(basename ${P}) | cut -f 1 -d \'.\')\n')
@@ -193,7 +204,7 @@ class Batch:
         job_script.write('module load python/anaconda3.6\n')
         job_script.write('source activate growth\n\n')
 
-        # move to batch directory
+        # move to job directory
         job_script.write('cd {:s} \n\n'.format(path))
 
         # run script
@@ -216,7 +227,7 @@ class Batch:
         # change the permissions
         chmod(job_script_path, 0o755)
 
-    def build_batches(self, batch_size=1):
+    def build_batches(self):
         """
         Creates directory and writes simulation paths for each batch.
 
@@ -238,10 +249,10 @@ class Batch:
         for i, simulation_path in self.simulation_paths.items():
 
             # determine batch ID
-            batch_id = i // batch_size
+            batch_id = i // self.batch_size
 
             # process new batch
-            if i % batch_size == 0:
+            if i % self.batch_size == 0:
 
                 # open batch file and append to index
                 batch_path = join(batches_dir, '{:d}.txt'.format(batch_id))
@@ -255,7 +266,7 @@ class Batch:
             batch_file.write('{:s}\n'.format(simulation_path))
 
             # close batch file
-            if i % batch_size == (batch_size - 1):
+            if i % self.batch_size == (self.batch_size - 1):
                 batch_file.close()
                 chmod(batch_path, 0o755)
 
@@ -265,7 +276,7 @@ class Batch:
 
     def make_directory(self, directory='./'):
         """
-        Create directory for batch of jobs.
+        Create job directory.
 
         Args:
 
@@ -273,7 +284,7 @@ class Batch:
 
         """
 
-        # assign name to batch
+        # assign name to job
         timestamp = datetime.fromtimestamp(time()).strftime('%y%m%d_%H%M%S')
         name = '{:s}_{:s}'.format(self.__class__.__name__, timestamp)
 
@@ -291,19 +302,16 @@ class Batch:
 
     def build(self,
               directory='./',
-              batch_size=25,
               save_history=True,
               walltime=10,
               allocation='p30653',
               **sim_kw):
         """
-        Build directory tree for a batch of jobs. Instantiates and saves a simulation instance for each parameter set, then generates a single shell script to submit each simulation as a separate job.
+        Build job directory tree. Instantiates and saves a simulation instance for each parameter set, then generates a single shell script to submit each simulation as a separate job.
 
         Args:
 
             directory (str) - destination path
-
-            batch_size (int) - number of simulations per batch
 
             save_history (bool) - if True, save simulation history
 
@@ -315,12 +323,11 @@ class Batch:
 
         """
 
-        # create batch directory
+        # create job directory
         self.make_directory(directory)
 
         # store parameters (e.g. pulse conditions)
         self.sim_kw = sim_kw
-        self.batch_size = batch_size
 
         # build simulations
         for i, parameters in enumerate(self.parameters):
@@ -328,12 +335,12 @@ class Batch:
             self.simulation_paths[i] = relpath(simulation_path, self.path)
             self.build_simulation(parameters, simulation_path, **sim_kw)
 
-        # save serialized batch
-        with open(join(self.path, 'batch.pkl'), 'wb') as file:
+        # save serialized job
+        with open(join(self.path, 'job.pkl'), 'wb') as file:
             pickle.dump(self, file, protocol=-1)
 
         # build parameter file for each batch
-        self.build_batches(batch_size=batch_size)
+        self.build_batches()
 
         # build job run script
         self.build_run_script(self.path,
@@ -388,9 +395,13 @@ class Batch:
         simulation_path = join(self.path, self.simulation_paths[index])
         return GrowthSimulation.load(simulation_path)
 
+    def load_batch(self, batch_id):
+        """ Returns batch of simulations. """
+        return [self.load_simulation(i) for i in self.batches[batch_id]]
+
     def apply(self, func):
         """
-        Applies function to entire batch of simulations.
+        Applies function to all simulations.
 
         Args:
 
