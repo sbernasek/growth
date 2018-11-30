@@ -5,7 +5,7 @@ from growth.sweep.simulation import GrowthSimulation
 
 # ======================== PARSE SCRIPT ARGUMENTS =============================
 
-args = RunArguments(description='Growth simulation arguments.')
+args = RunArguments(description='Growth job arguments.')
 path = args['path']
 save_history = args['save_history']
 
@@ -15,11 +15,11 @@ save_history = args['save_history']
 
 start_time = time()
 
-# run each simulation in batch file
-with open(path, 'r') as batch_file:
+# run each simulation in job file
+with open(path, 'r') as job_file:
 
     # run each simulation
-    for path in batch_file.readlines():
+    for path in job_file.readlines():
 
         path = path.strip()
 
