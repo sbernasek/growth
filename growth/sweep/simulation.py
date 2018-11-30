@@ -94,3 +94,17 @@ class GrowthSimulation(Culture):
         sim.recombination_duration = self.recombination_duration
         sim.final_population = self.final_population
         return sim
+
+    @property
+    def results(self):
+        """ Returns simulation results in dictionary format. """
+        return {
+            'division_rate': self.division,
+            'recombination_rate': self.recombination,
+            'recombination_start': self.recombination_start,
+            'recombination_duration': self.recombination_duration,
+            'population': self.size,
+            'transclone_edges': self.heterogeneity,
+            'percent_heterozygous': self.percent_heterozygous,
+            'num_clones': self.clones.num_clones,
+            'clone_size_variation': self.clones.size_variation}

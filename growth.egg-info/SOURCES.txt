@@ -21,9 +21,13 @@ growth/scripts/run_simulation.py
 growth/spatial/__init__.py
 growth/spatial/triangulation.py
 growth/sweep/__init__.py
+growth/sweep/analysis.py
 growth/sweep/arguments.py
+growth/sweep/batch.py
 growth/sweep/jobs.py
 growth/sweep/simulation.py
 growth/sweep/sweep.py
 growth/visualization/__init__.py
 growth/visualization/animation.py
+growth/visualization/batch.py
+growth/visualization/sweep.py

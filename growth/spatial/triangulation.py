@@ -7,9 +7,23 @@ class LocalTriangulation(Triangulation):
     """
     Triangulation with edge distance filter.
 
+    Attributes:
+
+        edge_list (np.ndarray[int]) - (from, to) node pairs
+
+        edge_lengths (np.ndarray[float]) - euclidean length of each edge
+
     """
 
-    def __init__(self, *args, max_length=0.1, **kwargs):
+    def __init__(self, *args, **kwargs):
+        """
+        Instantiate triangulation.
+
+        Args:
+
+            x, y (np.ndarray[float]) - spatial coordinates
+
+        """
 
         # call matplotlib.tri.Triangulation instantiation
         super().__init__(*args, **kwargs)
@@ -17,9 +31,6 @@ class LocalTriangulation(Triangulation):
         # compile edges
         edge_list = self.compile_edge_list()
         edge_lengths = self.evaluate_edge_lengths(edge_list, self.x, self.y)
-
-        # set max_length attribute
-        self.max_length = max_length
 
         # store edges
         self.edge_list = edge_list
@@ -43,7 +54,7 @@ class LocalTriangulation(Triangulation):
     @property
     def edges(self):
         """ Filtered edges. """
-        #return self.filter_edges(self.nodes, self.edge_list, self.edge_lengths, max_length=self.max_length)
+        #return self.filter_edges(self.nodes, self.edge_list, self.edge_lengths)
         return self.filter_outliers(self.nodes, self.edge_list, self.edge_lengths)
         #return self.filter_hull(self.edge_list)
         #return self.filter_longest_edge(self.edge_list, self.edge_lengths)

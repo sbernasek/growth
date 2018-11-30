@@ -3,8 +3,10 @@ from os import mkdir
 import numpy as np
 import pandas as pd
 import pickle
+from ..visualization.sweep import SweepVisualization
 from .jobs import Job
 from .simulation import GrowthSimulation
+from .analysis import SweepResults
 
 
 class SweepProperties:
@@ -38,7 +40,7 @@ class SweepProperties:
         return np.meshgrid(self.recombination_start, self.recombination, indexing='xy')
 
 
-class Sweep(Job, SweepProperties):
+class Sweep(Job, SweepProperties, SweepVisualization):
     """
     Class for performing a parameter sweep.
     """
@@ -58,12 +60,17 @@ class Sweep(Job, SweepProperties):
         parameters = np.repeat(parameters, repeats=replicates, axis=0)
         super().__init__(parameters, batch_size=replicates)
 
+    @property
+    def batches(self):
+        """ 2D array of Batch objects. """
+        return np.array(super().batches).reshape(self.shape)
+
     @classmethod
     def load(cls, path):
         sweep = super().load(path)
         results_path = join(path, 'data.hdf')
         if exists(results_path):
-            sweep.results = pd.read_hdf(results_path, 'results')
+            sweep._results = pd.read_hdf(results_path, 'results')
         return sweep
 
     def build_simulation(self, parameters, simulation_path, **kwargs):
@@ -102,34 +109,28 @@ class Sweep(Job, SweepProperties):
     def aggregate(self):
         """ Aggregate results from all sweeps. """
 
-        row_size = self.density*self.batch_size
-        col_size = self.batch_size
+        # get sweep shape
+        nrows, ncols = self.shape
 
-        records = []
-        for index in range(self.N):
-            row_id = index // row_size
-            col_id = (index % row_size) // col_size
-            batch_id = (index % row_size) % col_size
+        # compile results from all batches
+        data = []
+        for index, batch in enumerate(self.batches):
+            row_id, column_id = index // ncols, index % ncols
+            batch_data = batch.results
+            batch_data['row_id'] = row_id
+            batch_data['column_id'] = column_id
+            data.append(batch_data)
+        data = pd.concat(data)
 
-            # load simulation
-            simulation = self[index]
-
-            record = {
-                'row': row_id,
-                'column': col_id,
-                'replicate': batch_id,
-                'division_rate': simulation.division,
-                'recombination_rate': simulation.recombination,
-                'recombination_start': simulation.recombination_start,
-                'recombination_duration': simulation.recombination_duration,
-                'population': simulation.size,
-                'transclone_edges': simulation.heterogeneity,
-                'percent_heterozygous': simulation.percent_heterozygous,
-                'num_clones': simulation.clones.num_clones,
-                'clone_size_variation': simulation.clones.size_variation}
-
-            records.append(record)
+        # add mean clone size and start time attributes
+        data['mean_clone_size'] = data.population / data.num_clones
+        data['start_time'] = data.recombination_start
 
         # save results
-        self.results = pd.DataFrame(records)
-        self.results.to_hdf(join(self.path, 'data.hdf'), key='results')
+        self._results = data
+        self._results.to_hdf(join(self.path, 'data.hdf'), key='results')
+
+    @property
+    def results(self):
+        """ Returns simulation results object. """
+        return SweepResults(self._results, self.shape)

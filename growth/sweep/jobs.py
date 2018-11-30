@@ -8,9 +8,46 @@ from time import time
 from datetime import datetime
 
 from .simulation import GrowthSimulation
+from .batch import Batch
 
 
-class Job:
+class JobProperties:
+    """
+    Properties for Job class.
+    """
+
+    @property
+    def N(self):
+        """ Number of samples in parameter space. """
+        return len(self.parameters)
+
+    @property
+    def num_batches(self):
+        """ Number of batches. """
+        N = self.N // self.batch_size
+        if self.N % self.batch_size != 0:
+            N += 1
+        return N
+
+    @property
+    def batch_indices(self):
+        """ Returns simulation indices for each batch. """
+        b = self.batch_size
+        return [np.arange(i*b, i*b+b) for i in range(self.num_batches)]
+
+    @property
+    def batches(self):
+        """ List of Batch objects. """
+        return [self.get_batch(i) for i in range(self.num_batches)]
+
+    def get_batch(self, batch_id):
+        """ Returns Batch of simulations. """
+        fmt = lambda x: join(self.path, self.simulation_paths[x])
+        simulation_paths = [fmt(i) for i in self.batch_indices[batch_id]]
+        return Batch(simulation_paths)
+
+
+class Job(JobProperties):
     """
     Class defines a collection of job submissions for Quest.
 
@@ -66,17 +103,6 @@ class Job:
             return simulation
         else:
             raise StopIteration
-
-    @property
-    def N(self):
-        """ Number of samples in parameter space. """
-        return len(self.parameters)
-
-    @property
-    def batches(self):
-        """ Simulation IDs for each batch. """
-        b = self.batch_size
-        return [np.arange(i*b, i*b+b) for i in range(1+self.N//b)]
 
     @staticmethod
     def load(path):
@@ -408,10 +434,6 @@ class Job:
         """
         simulation_path = join(self.path, self.simulation_paths[index])
         return GrowthSimulation.load(simulation_path)
-
-    def load_batch(self, batch_id):
-        """ Returns batch of simulations. """
-        return [self.load_simulation(i) for i in self.batches[batch_id]]
 
     def apply(self, func):
         """

@@ -70,9 +70,7 @@ class CultureProperties:
     @property
     def triangulation(self):
         """ Delaunay triangulation with edge-length filtering. """
-        max_length = self.cell_radius * 3
-        max_length = 0.1
-        return LocalTriangulation(*self.xy.T, max_length=max_length)
+        return LocalTriangulation(*self.xy.T)
 
     @property
     def xy_graph(self):
@@ -205,7 +203,7 @@ class CultureMeasurements:
         fluorescence = Fluorescence.from_scale(scale)
         df = pd.DataFrame(self.xy, columns=['centroid_x', 'centroid_y'])
         df['ground'] = self.genotypes
-        df['r'] = fluorescence(self.genotypes)
+        df['fluorescence'] = fluorescence(self.genotypes)
         return df
 
 
