@@ -16,7 +16,7 @@ growth/measure/fluorescence.py
 growth/scripts/__init__.py
 growth/scripts/aggregate.py
 growth/scripts/build_sweep.py
-growth/scripts/run_batch.py
+growth/scripts/run_job.py
 growth/scripts/run_simulation.py
 growth/spatial/__init__.py
 growth/spatial/triangulation.py

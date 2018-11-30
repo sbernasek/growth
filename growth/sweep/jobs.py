@@ -234,7 +234,7 @@ class Job(JobProperties):
 
         # load python module and metabolism virtual environment
         job_script.write('module load python/anaconda3.6\n')
-        job_script.write('source activate growth\n\n')
+        job_script.write('source activate ~/pythonenvs/growth_env\n\n')
 
         # move to job directory
         job_script.write('cd {:s} \n\n'.format(path))
