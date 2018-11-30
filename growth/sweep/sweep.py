@@ -109,17 +109,14 @@ class Sweep(Job, SweepProperties, SweepVisualization):
     def aggregate(self):
         """ Aggregate results from all sweeps. """
 
-        # get sweep shape
-        nrows, ncols = self.shape
-
         # compile results from all batches
         data = []
-        for index, batch in enumerate(self.batches):
-            row_id, column_id = index // ncols, index % ncols
-            batch_data = batch.results
-            batch_data['row_id'] = row_id
-            batch_data['column_id'] = column_id
-            data.append(batch_data)
+        for row_id, row in enumerate(self.batches):
+            for column_id, batch in enumerate(row):
+                batch_data = batch.results
+                batch_data['row_id'] = row_id
+                batch_data['column_id'] = column_id
+                data.append(batch_data)
         data = pd.concat(data)
 
         # add mean clone size and start time attributes
