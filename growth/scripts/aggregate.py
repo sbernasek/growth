@@ -1,11 +1,11 @@
 from time import time
-from growth.sweep.arguments import SweepArguments
+from growth.sweep.arguments import RunArguments
 from growth.sweep.sweep import Sweep
 
 
 # ======================== PARSE SCRIPT ARGUMENTS =============================
 
-args = SweepArguments(description='Parameter sweep arguments.')
+args = RunArguments(description='Aggregation arguments.')
 
 # ============================= RUN SCRIPT ====================================
 

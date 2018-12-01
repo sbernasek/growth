@@ -37,6 +37,21 @@ class LocalTriangulation(Triangulation):
         self.edge_lengths = edge_lengths
 
     @property
+    def size(self):
+        """ Number of points. """
+        return self.x.size
+
+    @property
+    def radii(self):
+        """ Radius. """
+        return np.sqrt(self.x**2 + self.y**2)
+
+    @property
+    def angles(self):
+        """ Angle on [0, 2p] interval. """
+        return np.arctan2(self.y, self.x) + np.pi
+
+    @property
     def hull(self):
         """ Convex hull. """
         return ConvexHull(np.vstack((self.x, self.y)).T)
@@ -54,7 +69,8 @@ class LocalTriangulation(Triangulation):
     @property
     def edges(self):
         """ Filtered edges. """
-        return self.filter_edges(self.nodes, self.edge_list, self.edge_lengths)
+        return self.filter_by_angle()
+        #return self.filter_edges(self.nodes, self.edge_list, self.edge_lengths)
         #return self.filter_outliers(self.nodes, self.edge_list, self.edge_lengths)
         #return self.filter_hull(self.edge_list)
         #return self.filter_longest_edge(self.edge_list, self.edge_lengths)
@@ -178,3 +194,50 @@ class LocalTriangulation(Triangulation):
         modified_z_score[points.ravel()<median] = 0
 
         return modified_z_score > threshold
+
+    @property
+    def edge_angles(self):
+        """ Angular distance of each edge about origin. """
+        angles = np.abs(np.diff(self.angles[self.edge_list], axis=1)).ravel()
+        angles[angles>np.pi] = 2*np.pi-angles[angles>np.pi]
+        return angles
+
+    @property
+    def edge_radii(self):
+        """ Minimum node radius in each edge. """
+        return self.radii[self.edge_list].min(axis=1)
+
+    @property
+    def angle_threshold(self):
+        """ Predicted upper bound on edge angles. """
+        num_sigma = 1.
+        return (3+2.5*num_sigma) * (self.size**(-0.5))
+
+    def filter_by_angle(self):
+
+        # exclude outer edges that span too wide an angle
+        edge_radii = self.edge_radii
+        edge_angles = self.edge_angles
+        outer_edge_mask = edge_radii > np.percentile(edge_radii, 50)
+        wide_angle_mask = edge_angles >= self.angle_threshold
+        excluded_edge_mask = np.logical_and(outer_edge_mask, wide_angle_mask)
+
+        # determine accepted/rejected edges
+        rejected = self.edge_list[excluded_edge_mask]
+        accepted = self.edge_list[~excluded_edge_mask]
+
+        # find disconnected nodes
+        disconnected = self.find_disconnected_nodes(self.nodes, accepted)
+
+        # sort rejected edges by length
+        lengths = self.edge_lengths[excluded_edge_mask]
+        sort_indices = np.argsort(lengths)
+        rejected = rejected[sort_indices]
+
+        # add shortest edge for each disconnected node
+        if disconnected.size > 0:
+            f = np.vectorize(lambda node: self.find_first_edge(rejected, node))
+            connecting = rejected[f(disconnected)]
+            accepted = np.vstack((accepted, connecting))
+
+        return accepted

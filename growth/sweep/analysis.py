@@ -17,7 +17,7 @@ class SweepResults:
     @property
     def xx(self):
         """ Grid of X values (recombination start generations). """
-        return self.to_grid('start_time')
+        return self.to_grid('recombination_start')
 
     @property
     def yy(self):

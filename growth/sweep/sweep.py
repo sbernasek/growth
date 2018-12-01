@@ -20,25 +20,19 @@ class SweepProperties:
         return self.grid[0].shape
 
     @property
-    def division(self):
-        """ Division rate values.  """
-        return np.linspace(0.1, 1., self.density)
-
-    @property
-    def recombination(self):
+    def rates(self):
         """ Recombination rate values.  """
-        return np.array([0.25], dtype=np.float64)
-        #return np.logspace(-5, 0, num=self.density, base=2)
+        return np.linspace(self.min_rate, self.max_rate, self.num_rates)
 
     @property
-    def recombination_start(self):
-        """ Population size at which recombination begins. """
-        return np.arange(0,(self.population-self.recombination_duration)+1, .5)
+    def starts(self):
+        """ Generations at which recombination begins. """
+        return np.linspace(self.first_start, self.last_start, self.num_periods)
 
     @property
     def grid(self):
-        """ Meshgrid of division and recombination rates. """
-        return np.meshgrid(self.recombination_start, self.recombination, indexing='xy')
+        """ Meshgrid of recombination start points and recombination rates. """
+        return np.meshgrid(self.starts, self.rates, indexing='xy')
 
 
 class Sweep(Job, SweepProperties, SweepVisualization):
@@ -47,18 +41,52 @@ class Sweep(Job, SweepProperties, SweepVisualization):
     """
 
     def __init__(self,
-                 density=5,
-                 replicates=10,
-                 division_rate=0.1,
-                 recombination_duration=4,
-                 population=11):
-        self.density = density
-        self.population = population
-        self.division_rate = division_rate
-        self.recombination_duration = recombination_duration
 
+                 # argument defining growth rate
+                 division_rate=0.2,
+
+                 # arguments defining recombination period
+                 duration=4,
+                 first_start=0,
+                 last_start=None,
+                 num_periods=None,
+
+                 # arguments defining recombination rate
+                 min_rate=0.25,
+                 max_rate=1.0,
+                 num_rates=1,
+
+                 # arguments defining simulation size
+                 min_population=11,
+                 num_replicates=10):
+
+        # set division rate
+        self.division_rate = division_rate
+
+        # set population size
+        self.min_population = min_population
+        self.num_replicates = num_replicates
+
+        # define recombination periods
+        self.duration = duration
+        self.first_start = first_start
+        if last_start is None or last_start == -1:
+            last_start = min_population - last_start
+        self.last_start = last_start
+        if num_periods is None or num_periods == -1:
+            num_periods = 1 + (last_start - first_start)
+        self.num_periods = num_periods
+
+        # define recombination rates
+        self.min_rate = min_rate
+        self.max_rate = max_rate
+        self.num_rates = num_rates
+
+        # construct parameter array
         parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
         parameters = np.repeat(parameters, repeats=replicates, axis=0)
+
+        # instantiate job
         super().__init__(parameters, batch_size=replicates)
 
     @property
@@ -96,8 +124,8 @@ class Sweep(Job, SweepProperties, SweepVisualization):
             division=self.division_rate,
             recombination=recombination_rate,
             recombination_start=recombination_start,
-            recombination_duration=self.recombination_duration,
-            final_population=self.population,
+            recombination_duration=self.duration,
+            final_population=self.min_population,
             **kwargs)
 
         # create simulation directory
@@ -122,7 +150,6 @@ class Sweep(Job, SweepProperties, SweepVisualization):
 
         # add mean clone size and start time attributes
         data['mean_clone_size'] = data.population / data.num_clones
-        data['start_time'] = data.recombination_start
 
         # save results
         self._results = data

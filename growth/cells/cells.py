@@ -40,24 +40,24 @@ class Cell:
     def set_xy(self, xy):
         self.xy = xy
 
-    def recombine(self, recombination=0.):
+    def recombine(self, rate=0.):
 
         # duplicate chromosomes
         chromosomes = np.tile(self.chromosomes, 2)
 
         # recombination
-        if np.random.random() <= recombination:
+        if np.random.random() <= rate:
             chromosomes.sort()
 
         return chromosomes
 
-    def divide(self, recombination=0., reference_population=1000):
+    def divide(self, recombination_rate=0., reference_population=1000):
 
         # set average spacing between cells
         spacing = np.sqrt(2/reference_population) / 1e5
 
         # perform recombination
-        chromosomes = self.recombine(recombination=recombination)
+        chromosomes = self.recombine(rate=recombination_rate)
 
         # determine child positions
         jitter = np.random.normal(scale=spacing, size=(2, 2))

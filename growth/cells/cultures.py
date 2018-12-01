@@ -78,6 +78,22 @@ class CultureProperties:
         return nx.Graph(self.triangulation.edges.tolist())
 
     @property
+    def weighted_xy_graph(self):
+        """ Graph of adjacent cells, weighted by genetic similarity. """
+
+        # compile edge weights
+        weighting = 0.1
+        edge_genotypes = self.genotypes[self.triangulation.edge_list]
+        weighted = (np.diff(edge_genotypes, axis=1).ravel()!=0).astype(float)
+        weights = np.ones(weighted.size, dtype=np.float64) + weighted*weighting
+
+        # compile weighted edge list
+        edge_list = self.triangulation.edges.tolist()
+        edges = [edge+[{'weight': w}] for edge, w in zip(edge_list, weights)]
+
+        return nx.Graph(edges)
+
+    @property
     def labeled_graph(self):
         """ Graph of locally adjacent cells including cell genotypes. """
         G = self.xy_graph
@@ -280,7 +296,7 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
         """ Inoculate with <N> generations of heterozygous cells. """
         return Cell().grow(max_generation=N, **kwargs)
 
-    def move(self, center=None):
+    def move(self, center=None, weight='weight'):
         """
         Update cell positions.
 
@@ -297,27 +313,34 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
         # determine scaling (colony radius)
         radius = np.sqrt(self.size/self.reference_population)
 
+        # build graph
+        if weight is not None:
+            graph = self.weighted_xy_graph
+        else:
+            graph = self.xy_graph
+
         # run relaxation
         xy_dict = nx.kamada_kawai_layout(
-            self.xy_graph,
+            graph,
             pos=dict(enumerate(self.xy)),
             center=center,
-            scale=radius)
+            scale=radius,
+            weight=weight)
 
         # update cell positions
         _ = [cell.set_xy(xy_dict[i]) for i, cell in enumerate(self.cells)]
 
-    def divide(self, division=0.1, recombination=0.1):
+    def divide(self, division_rate=0.1, recombination_rate=0.1):
 
         # select cells for division
-        divided = np.random.random(len(self.parents)) < division
+        divided = np.random.random(len(self.parents)) < division_rate
 
         # create next generation
         for index, parent in enumerate(self.parents):
 
             # if cell divided, pass children to next generation
             if divided[index]:
-                children = parent.divide(recombination=recombination)
+                children = parent.divide(recombination_rate=recombination_rate)
                 self.cells.extend(children)
 
             # otherwise, pass cell to next generation
@@ -325,11 +348,11 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
                 self.cells.append(parent.copy())
 
     def update(self,
-               division=0.1,
-               recombination=0.1,
+               division_rate=0.1,
+               recombination_rate=0.1,
                **kwargs):
         self.history.append([])
-        self.divide(division, recombination)
+        self.divide(division_rate, recombination_rate)
         self.move(**kwargs)
 
     def grow(self,

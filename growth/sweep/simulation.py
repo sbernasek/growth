@@ -10,32 +10,32 @@ from ..cells.cells import Cell
 class GrowthSimulation(Culture):
 
     def __init__(self,
-                 division=0.1,
-                 recombination=0.1,
+                 division_rate=0.1,
+                 recombination_rate=0.1,
                  recombination_start=0,
                  recombination_duration=8,
-                 final_population=11,
+                 min_population=11,
                  **kwargs):
 
         # define seed
         seed = [Cell()]
         for generation in range(2):
             if recombination_start == generation:
-                seed = reduce(add, [c.grow(recombination=recombination) for c in seed])
+                seed = reduce(add, [c.grow(recombination_rate=recombination_rate) for c in seed])
             else:
-                seed = reduce(add, [c.grow(recombination=0.) for c in seed])
+                seed = reduce(add, [c.grow(recombination_rate=0.) for c in seed])
 
         # instantiate culture
         super().__init__(starter=seed,
-                         reference_population=2**final_population,
+                         reference_population=2**min_population,
                          **kwargs)
 
         # store additional properties
-        self.division = division
-        self.recombination = recombination
+        self.division_rate = division_rate
+        self.recombination_rate = recombination_rate
         self.recombination_start = recombination_start
         self.recombination_duration = recombination_duration
-        self.final_population = final_population
+        self.min_population = min_population
 
     def save(self, path, save_history=True):
         """ Save pickled object to <path/simulation.pkl>. """
@@ -56,51 +56,51 @@ class GrowthSimulation(Culture):
         # define population windows
         pop0 = int(2**self.recombination_start)
         pop1 = int(2**(self.recombination_start+self.recombination_duration))
-        pop2 = int(2**self.final_population)
+        pop2 = int(2**self.min_population)
         if pop1 > pop2:
             pop1 = pop2
 
-        # growth before recombination
+        # growth before recombination_rate
         self.grow(min_population=pop0,
-                 division=self.division,
-                 recombination=0.)
+                 division_rate=self.division_rate,
+                 recombination_rate=0.)
 
-        # growth with recombination
+        # growth with recombination_rate
         self.grow(min_population=pop1,
-                 division=self.division,
-                 recombination=self.recombination)
+                 division_rate=self.division_rate,
+                 recombination_rate=self.recombination_rate)
 
-        # growth after recombination
+        # growth after recombination_rate
         self.grow(min_population=pop2,
-                 division=self.division,
-                 recombination=0.)
+                 division_rate=self.division_rate,
+                 recombination_rate=0.)
 
     def branch(self, t=None):
         """ Returns copy of culture at generation <t> including history. """
         sim = super().branch(t)
-        sim.division = self.division
-        sim.recombination = self.recombination
+        sim.division_rate = self.division_rate
+        sim.recombination_rate = self.recombination_rate
         sim.recombination_start = self.recombination_start
         sim.recombination_duration = self.recombination_duration
-        sim.final_population = self.final_population
+        sim.min_population = self.min_population
         return sim
 
     def freeze(self, t):
         """ Returns snapshot of culture at generation <t>. """
         sim = super().freeze(t)
-        sim.division = self.division
-        sim.recombination = self.recombination
+        sim.division_rate = self.division_rate
+        sim.recombination_rate = self.recombination_rate
         sim.recombination_start = self.recombination_start
         sim.recombination_duration = self.recombination_duration
-        sim.final_population = self.final_population
+        sim.min_population = self.min_population
         return sim
 
     @property
     def results(self):
         """ Returns simulation results in dictionary format. """
         return {
-            'division_rate': self.division,
-            'recombination_rate': self.recombination,
+            'division_rate': self.division_rate,
+            'recombination_rate': self.recombination_rate,
             'recombination_start': self.recombination_start,
             'recombination_duration': self.recombination_duration,
             'population': self.size,
