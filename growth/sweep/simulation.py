@@ -2,6 +2,7 @@ from os.path import join, isdir
 from os import mkdir
 from functools import reduce
 from operator import add
+import numpy as np
 
 from ..cells.cultures import Culture
 from ..cells.cells import Cell
@@ -17,15 +18,25 @@ class GrowthSimulation(Culture):
                  min_population=11,
                  **kwargs):
 
-        # define seed
+        # define seed population
+        seed_size = 4
+        start = 2**recombination_start
+        stop = 2**(recombination_start+recombination_duration)
         seed = [Cell()]
-        for generation in range(3):
-            rate = recombination_rate
-            is_before = generation < recombination_start
-            is_after = generation >= recombination_start+recombination_duration
+        while len(seed) < seed_size:
+
+            # determine whether recombination is active
+            population = len(seed)
+            is_before = population < start
+            is_after = population >= stop
             if is_before or is_after:
-                rate *= 0.
-            seed = reduce(add, [cell.divide(rate) for cell in seed])
+                rate = 0.
+            else:
+                rate = recombination_rate
+
+            # choose a random cell for division
+            cell_id = np.random.randint(0, population)
+            seed.extend(seed.pop(cell_id).divide(rate))
 
         # instantiate culture
         super().__init__(starter=seed,
