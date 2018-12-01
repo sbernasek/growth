@@ -84,10 +84,10 @@ class Sweep(Job, SweepProperties, SweepVisualization):
 
         # construct parameter array
         parameters = np.array(list(zip(*[grid.ravel() for grid in self.grid])))
-        parameters = np.repeat(parameters, repeats=replicates, axis=0)
+        parameters = np.repeat(parameters, repeats=num_replicates, axis=0)
 
         # instantiate job
-        super().__init__(parameters, batch_size=replicates)
+        super().__init__(parameters, batch_size=num_replicates)
 
     @property
     def batches(self):
