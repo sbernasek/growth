@@ -27,7 +27,8 @@ class SweepProperties:
     @property
     def recombination(self):
         """ Recombination rate values.  """
-        return np.logspace(-5, 0, num=self.density, base=2)
+        return np.array([0.15], dtype=np.float64)
+        #return np.logspace(-5, 0, num=self.density, base=2)
 
     @property
     def recombination_start(self):
