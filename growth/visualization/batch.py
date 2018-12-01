@@ -40,7 +40,8 @@ class BatchVisualization:
         figsize = (nrows*size, ncols*size)
         fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
 
-        for replicate_id, ax in enumerate(axes.ravel()):
+        for replicate_id in range(self.size):
+            ax = axes.ravel()[replicate_id]
 
             # load simulation
             sim = self[replicate_id]

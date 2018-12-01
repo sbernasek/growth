@@ -13,17 +13,19 @@ class GrowthSimulation(Culture):
                  division_rate=0.1,
                  recombination_rate=0.1,
                  recombination_start=0,
-                 recombination_duration=8,
+                 recombination_duration=4,
                  min_population=11,
                  **kwargs):
 
         # define seed
         seed = [Cell()]
-        for generation in range(2):
-            if recombination_start == generation:
-                seed = reduce(add, [c.grow(recombination_rate=recombination_rate) for c in seed])
-            else:
-                seed = reduce(add, [c.grow(recombination_rate=0.) for c in seed])
+        for generation in range(3):
+            rate = recombination_rate
+            is_before = generation < recombination_start
+            is_after = generation >= recombination_start+recombination_duration
+            if is_before or is_after:
+                rate *= 0.
+            seed = reduce(add, [cell.divide(rate) for cell in seed])
 
         # instantiate culture
         super().__init__(starter=seed,
