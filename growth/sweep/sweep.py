@@ -33,7 +33,7 @@ class SweepProperties:
     @property
     def recombination_start(self):
         """ Population size at which recombination begins. """
-        return np.arange((self.population-self.recombination_duration)+1)
+        return np.arange(0,(self.population-self.recombination_duration)+1, .5)
 
     @property
     def grid(self):
