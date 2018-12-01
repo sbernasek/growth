@@ -42,9 +42,10 @@ class JobProperties:
 
     def get_batch(self, batch_id):
         """ Returns Batch of simulations. """
-        fmt = lambda x: join(self.path, self.simulation_paths[x])
+        #fmt = lambda x: join(self.path, self.simulation_paths[x])
+        fmt = lambda x: self.simulation_paths[x]
         simulation_paths = [fmt(i) for i in self.batch_indices[batch_id]]
-        return Batch(simulation_paths)
+        return Batch(simulation_paths, root=self.path)
 
 
 class Job(JobProperties):

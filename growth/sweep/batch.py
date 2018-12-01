@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from os.path import join
 from ..visualization.batch import BatchVisualization
 from .simulation import GrowthSimulation
 
@@ -9,8 +10,9 @@ class Batch(BatchVisualization):
     Class for managing batch of simulations.
     """
 
-    def __init__(self, paths):
+    def __init__(self, paths, root='.'):
         self.paths = paths
+        self.root = root
 
     @property
     def size(self):
@@ -44,7 +46,7 @@ class Batch(BatchVisualization):
 
     def load_simulation(self, index):
         """ Load simulation. """
-        return GrowthSimulation.load(self.paths[index])
+        return GrowthSimulation.load(join(self.root, self.paths[index]))
 
     def measure(self, scale=10, replicates=1):
         measurements = []
