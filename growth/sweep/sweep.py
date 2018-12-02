@@ -22,7 +22,9 @@ class SweepProperties:
     @property
     def rates(self):
         """ Recombination rate values.  """
-        return np.linspace(self.min_rate, self.max_rate, self.num_rates)
+        return np.logspace(np.log2(self.min_rate),
+                           np.log2(self.max_rate),
+                           self.num_rates, base=2)
 
     @property
     def starts(self):
@@ -46,13 +48,13 @@ class Sweep(Job, SweepProperties, SweepVisualization):
                  division_rate=0.2,
 
                  # arguments defining recombination period
-                 duration=4,
+                 duration=2,
                  first_start=0,
                  last_start=None,
                  num_periods=None,
 
                  # arguments defining recombination rate
-                 min_rate=0.25,
+                 min_rate=0.2,
                  max_rate=1.0,
                  num_rates=1,
 

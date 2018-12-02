@@ -98,7 +98,7 @@ class SweepArguments(RunArguments):
           self.add_argument('--min_rate',
                               help='Minimum recombination rate.',
                               type=float,
-                              default=0.15,
+                              default=0.2,
                               required=False)
 
           # add keyword argument for maximum recombination rate
