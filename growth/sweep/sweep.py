@@ -123,8 +123,8 @@ class Sweep(Job, SweepProperties, SweepVisualization):
 
         # instantiate simulation
         simulation = GrowthSimulation(
-            division=self.division_rate,
-            recombination=recombination_rate,
+            division_rate=self.division_rate,
+            recombination_rate=recombination_rate,
             recombination_start=recombination_start,
             recombination_duration=self.duration,
             final_population=self.min_population,
