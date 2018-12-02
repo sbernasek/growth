@@ -73,7 +73,7 @@ class Sweep(Job, SweepProperties, SweepVisualization):
         self.duration = duration
         self.first_start = first_start
         if last_start is None or last_start == -1:
-            last_start = min_population - last_start
+            last_start = min_population - duration
         self.last_start = last_start
         if num_periods is None or num_periods == -1:
             num_periods = 1 + (last_start - first_start)
