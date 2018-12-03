@@ -33,7 +33,7 @@ class BatchVisualization:
 
         # determine number of columns (roughly square by default)
         if ncols is None:
-            ncols = np.ceil(np.sqrt(self.size))
+            ncols = int(np.ceil(np.sqrt(self.size)))
 
         # determine figure shape
         nrows = self.size // ncols
