@@ -15,7 +15,7 @@ class SweepVisualization:
 
     def plot_culture_grid(self,
         replicate_id=0,
-        figsize=(25, 25),
+        panel_width=1,
         title=False,
         **kwargs):
         """
@@ -25,7 +25,7 @@ class SweepVisualization:
 
             replicate_id (int) - replicate shown
 
-            figsize (tuple) - figure size
+            panel_width (float) - width of individual panel
 
             title (bool) - if True, include title
 
@@ -37,6 +37,7 @@ class SweepVisualization:
 
         # create figure
         nrows, ncols = self.shape
+        figsize = (ncols*panel_width, nrows*panel_width)
         fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
 
         for index, batch in enumerate(self.batches.ravel()):

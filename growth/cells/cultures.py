@@ -200,7 +200,6 @@ class CultureVisualization:
             fig, ax = plt.subplots(figsize=(5, 5))
             ax.set_xlim(-1.2, 1.2)
             ax.set_ylim(-1.2, 1.2)
-            ax.set_aspect(1)
             ax.axis('off')
 
         # add triangulation
@@ -209,6 +208,7 @@ class CultureVisualization:
 
         # scatter points
         ax.scatter(*self.xy.T, s=s, lw=0, c=c)
+        ax.set_aspect(1)
 
 
 class CultureMeasurements:
