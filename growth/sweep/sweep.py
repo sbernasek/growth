@@ -15,6 +15,17 @@ class SweepProperties:
     """
 
     @property
+    def benchmark_path(self):
+        """ Path to benchmark directory """
+        return join(self.path, 'benchmark')
+
+    @property
+    def benchmark_results(self):
+        """ Benchmark results. """
+        path = join(self.benchmark_path, 'data.hdf')
+        return pd.read_hdf(path, key='benchmark')
+
+    @property
     def shape(self):
         """ Parameter sweep dimensions. """
         return self.grid[0].shape
