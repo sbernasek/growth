@@ -13,7 +13,7 @@ class BatchVisualization:
         """ Returns ordinal representation of <n>. """
         return "%d%s" % (n,"tsnrhtdd"[(floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 
-    def plot_culture_grid(self, ncols=5, size=3, title=False, **kwargs):
+    def plot_culture_grid(self, ncols=5, size=1, title=False, **kwargs):
         """
         Plots grid of cell cultures.
 
@@ -37,7 +37,7 @@ class BatchVisualization:
             nrows += 1
 
         # create figure
-        figsize = (nrows*size, ncols*size)
+        figsize = (ncols*size, nrows*size)
         fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
 
         for replicate_id in range(self.size):
