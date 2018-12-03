@@ -23,7 +23,11 @@ class SweepProperties:
     def benchmark_results(self):
         """ Benchmark results. """
         path = join(self.benchmark_path, 'data.hdf')
-        return pd.read_hdf(path, key='benchmark')
+        if exists(path):
+            data = pd.read_hdf(path, key='benchmark').reset_index()
+        else:
+            data = Non
+        return data
 
     @property
     def shape(self):
