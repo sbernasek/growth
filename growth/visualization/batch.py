@@ -13,7 +13,7 @@ class BatchVisualization:
         """ Returns ordinal representation of <n>. """
         return "%d%s" % (n,"tsnrhtdd"[(floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 
-    def plot_culture_grid(self, ncols=5, size=1, title=False, **kwargs):
+    def plot_culture_grid(self, size=1, title=False, ncols=None, **kwargs):
         """
         Plots grid of cell cultures.
 
@@ -21,7 +21,7 @@ class BatchVisualization:
 
             ncols (int) - number of columns
 
-            size (int) - figure panel width
+            size (int) - figure panel size
 
             title (bool) - if True, add title
 
@@ -30,6 +30,10 @@ class BatchVisualization:
             fig (matplotlib.figures.Figure)
 
         """
+
+        # determine number of columns (roughly square by default)
+        if ncols is None:
+            ncols = np.ceil(np.sqrt(self.size))
 
         # determine figure shape
         nrows = self.size // ncols

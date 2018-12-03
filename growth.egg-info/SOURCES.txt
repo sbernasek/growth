@@ -30,4 +30,5 @@ growth/sweep/sweep.py
 growth/visualization/__init__.py
 growth/visualization/animation.py
 growth/visualization/batch.py
+growth/visualization/culture.py
 growth/visualization/sweep.py

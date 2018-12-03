@@ -102,6 +102,12 @@ class Sweep(Job, SweepProperties, SweepVisualization):
         # instantiate job
         super().__init__(parameters, batch_size=num_replicates)
 
+    def __repr__(self):
+        """ Returns overview of sweep. """
+        description = '{:d} x {:d} sweep, '.format(*self.shape)
+        description += '{:d} recombination generations'.format(self.duration)
+        return description
+
     @property
     def batches(self):
         """ 2D array of Batch objects. """
