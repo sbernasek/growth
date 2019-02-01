@@ -238,6 +238,6 @@ class LocalTriangulation(Triangulation):
         if disconnected.size > 0:
             f = np.vectorize(lambda node: self.find_first_edge(rejected, node))
             connecting = rejected[f(disconnected)]
-            accepted = np.vstack((accepted, connecting))
+            accepted = np.vstack((accepted, connecting, connecting[::-1]))
 
         return accepted

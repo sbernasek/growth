@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 
@@ -42,7 +43,7 @@ class ColorBar:
         pass
 
 
-class ErrorColorbar(ColorBar):
+class ErrorColorBar(ColorBar):
 
     def __init__(self, **kwargs):
         super().__init__(cmap=plt.cm.seismic, **kwargs)

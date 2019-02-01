@@ -167,9 +167,9 @@ class CultureProperties:
 class CultureMeasurements:
     """ Methods for generating fluorescence measurements. """
 
-    def measure(self, scale=10):
+    def measure(self, ambiguity=0.1):
         """ Returns clones-compatible dataframe. """
-        fluorescence = Fluorescence.from_scale(scale)
+        fluorescence = Fluorescence(ambiguity=ambiguity)
         df = pd.DataFrame(self.xy, columns=['centroid_x', 'centroid_y'])
         df['ground'] = self.genotypes
         df['fluorescence'] = fluorescence(self.genotypes)
