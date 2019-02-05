@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from .conditional import ConditionalLogSampler
+from ..measure import ConditionedLognormalSampler
 
 
 class ScalarImage:
@@ -96,12 +96,13 @@ class DependentScalarImage(ScalarImage):
     Class defines a scalar image whose pixel intensities are sampled with some dependence upon another scalar image.
     """
 
-    def __init__(self, pixels):
+    def __init__(self, pixels, mean, sigma):
         """ Instantiate a dependent scalar image. """
         super().__init__(*pixels.shape)
-        self.sampler = ConditionalLogSampler(pixels.ravel())
+        x = np.log(pixels.ravel())
+        self.sampler = ConditionedLognormalSampler(x, np.log(mean), sigma)
 
-    def fill(self, mu, sigma, rho=0.0):
+    def fill(self, rho=0.0):
         """ Generate randomly sampled pixel values. """
-        pixels = self.sampler.sample(mu, sigma, rho=rho)
+        pixels = self.sampler.sample(rho=rho)
         self.im[:, :] = pixels.reshape(self.shape)

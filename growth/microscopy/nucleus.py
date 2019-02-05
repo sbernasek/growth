@@ -2,7 +2,7 @@ import numpy as np
 from skimage.morphology import disk
 from copy import deepcopy
 
-from ..measure import FluorescenceSampler
+from ..measure import LognormalSampler
 
 
 class Nucleus:
@@ -72,7 +72,7 @@ class Nucleus:
             replace (bool) - if True, replace existing pixel values
 
         """
-        sampler = FluorescenceSampler(self.mu, self.sigma)
+        sampler = LognormalSampler(self.mu, self.sigma)
 
         if replace:
             self._replace_pixels(im, values=sampler(self.num_pixels))

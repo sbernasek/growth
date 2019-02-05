@@ -168,7 +168,7 @@ class CultureProperties:
 class CultureMeasurements:
     """ Methods for generating synthetic measurements. """
 
-    def measure(self, ambiguity=0.1, **kwargs):
+    def measure(self, ambiguity=0.1, rho=0.0, **kwargs):
         """
         Returns dataframe of synthetic measurements.
 
@@ -176,12 +176,17 @@ class CultureMeasurements:
 
             ambiguity (float) - fluorescence ambiguity coefficient
 
+            rho (float) - expression capacity correlation coefficient
+
             kwargs: keyword arguments for measurement generator
 
         """
-        return MeasurementGenerator(self, ambiguity=ambiguity, **kwargs).df
+        return MeasurementGenerator(self,
+            ambiguity=ambiguity,
+            rho=rho,
+            **kwargs).df
 
-    def generate_microscopy(self, ambiguity, bleedthrough,
+    def generate_microscopy(self, ambiguity, rho, bleedthrough,
                             measurement_kwargs={},
                             microscopy_kwargs={}):
         """
@@ -190,6 +195,8 @@ class CultureMeasurements:
         Args:
 
             ambiguity (float) - clonal marker ambiguity coefficient
+
+            rho (float) - expression capacity correlation coefficient
 
             bleedthrough (float) - bleedthrough coefficient
 
@@ -202,7 +209,7 @@ class CultureMeasurements:
             image (SyntheticMicroscopy) - synthetic microscopy data
 
         """
-        data = self.measure(ambiguity, **measurement_kwargs)
+        data = self.measure(ambiguity, rho, **measurement_kwargs)
         image = SyntheticMicroscopy(data, bleedthrough, **microscopy_kwargs)
         image.draw()
         return image

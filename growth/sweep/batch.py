@@ -48,11 +48,11 @@ class Batch(BatchVisualization):
         """ Load simulation. """
         return GrowthSimulation.load(join(self.root, self.paths[index]))
 
-    def measure(self, ambiguity=0.1, replicates=1):
+    def measure(self, ambiguity=0.1, rho=0.0, replicates=1):
         measurements = []
         for growth_id, simulation in enumerate(self):
             for fluorescence_id in range(replicates):
-                data = simulation.measure(ambiguity)
+                data = simulation.measure(ambiguity, rho)
                 data['growth_replicate'] = growth_id
                 data['fluorescence_replicate'] = fluorescence_id
                 measurements.append(data)

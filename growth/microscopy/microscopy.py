@@ -173,8 +173,8 @@ class SyntheticMicroscopy(ScalarImage):
             rho (float) - approximate correlation coefficient
 
         """
-        bleed = DependentScalarImage(self.im[src])
-        bleed.fill(mu=self.bg_level, sigma=self.bg_noise, rho=rho)
+        bleed = DependentScalarImage(self.im[src],self.bg_level,self.bg_noise)
+        bleed.fill(rho=rho)
         self.im[dst] = self.im[dst] + bleed.im
 
     def add_bleedthrough(self, src, dst, rho=1.):

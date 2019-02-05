@@ -12,10 +12,10 @@ growth/cells/clones.py
 growth/cells/cultures.py
 growth/cells/phylogeny.py
 growth/measure/__init__.py
-growth/measure/fluorescence.py
+growth/measure/conditional.py
 growth/measure/measurements.py
+growth/measure/sampling.py
 growth/microscopy/__init__.py
-growth/microscopy/conditional.py
 growth/microscopy/images.py
 growth/microscopy/microscopy.py
 growth/microscopy/nucleus.py

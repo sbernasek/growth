@@ -3,7 +3,7 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 
 
-class FluorescenceSampler:
+class LognormalSampler:
     """
     Model for generating samples from a log-normal distribution.
 
@@ -31,7 +31,6 @@ class FluorescenceSampler:
 
         """
 
-        # store parameters
         self.mu = mu
         self.sigma = sigma
 
@@ -89,7 +88,7 @@ class FluorescenceSampler:
         ax.set_ylim(*ylim)
 
 
-class DosageDependentFluorescenceSampler:
+class MultiLognormalSampler:
     """
     Model for sampling gene dosage-dependent fluorescence levels. Intensities are drawn from three independent lognormal distributions based on the gene dosage of each cell. The separation between the distributions is determined by the 'ambiguity' parameter.
 
@@ -220,106 +219,3 @@ class DosageDependentFluorescenceSampler:
         # format axes
         ylim = (0, np.percentile(pdf[1:], q=99))
         ax.set_ylim(*ylim)
-
-
-
-
-# class MultiFluorescence:
-#     """
-#     Model for generating synthetic fluorescence intensities in two potentially correlated channels.
-
-#     Intensities are drawn from a log-normal distribution.
-
-#     Attributes:
-
-#         mu (np.ndarray[float]) - mean of normal distribution
-
-#         sigma (np.ndarray[float]) - standard deviation of normal distribution
-
-#         rho (float) - pearson product moment coefficient
-
-#         covariance (np.ndarray[float]) - covariance matrix
-
-#     """
-
-#     def __init__(self, mu, sigma, rho=0.):
-#         """
-#         Instantiate model for generating synthetic fluorescence intensities. Intensities are sampled from one of multiple log-normal distributions. The location and scale parameters defining each distribution are stored as vectors of coefficients. The distiribution used to generate each sample is defined by a vector of distribution indices passed to the __call__ method.
-
-#         Args:
-
-#             mu (np.ndarray[float]) - means of the underyling normal distributions
-
-#             sigma (np.ndarray[float]) - std devs of the underyling normal distributions
-
-#             rho (float) - pearson product moment coefficient
-
-#         """
-#         self.mu = np.log(np.asarray(mu))
-#         self.sigma = np.asarray(sigma)
-#         self.rho = rho
-#         self.covariance = self.covariance_matrix(self.sigma, rho)
-
-#     @property
-#     def dim(self):
-#         """ Number of random variables. """
-#         return self.mu.size
-
-#     @staticmethod
-#     def covariance_matrix(sigma, rho):
-#         """ Returns bivariate covariance matrix for given values of <sigma> and <rho>. """
-#         dim = sigma.size
-#         covariance = np.zeros((dim, dim))
-#         covariance[np.eye(dim).astype(bool)] = sigma ** 2
-#         for i in range(dim):
-#             for j in range(dim):
-#                 if i != j:
-#                     covariance[i,j] = sigma[i]*sigma[j]*rho
-#         return covariance
-
-#     def sample(self, size=1):
-#         """ Draw luminescence samples for distribution <indices>. """
-#         return np.exp(np.random.multivariate_normal(self.mu, self.covariance, size=size))
-
-
-# class FluorescenceSampler:
-#     """
-#     Class for sampling from a collection of multivariate lognormal distributions.
-#     """
-
-#     def __init__(self, ambiguity=0., rho=0., mu=None, sigma=None):
-#         """
-#         Instantiate model for generating synthetic fluorescence intensities. Intensities are sampled from one of multiple log-normal distributions. The location and scale parameters defining each distribution are stored as vectors of coefficients. The distiribution used to generate each sample is defined by a vector of distribution indices passed to the __call__ method.
-
-#         Args:
-
-#             ambiguity (float) - ambiguity coefficient
-
-#             rho (float) - pearson product moment coefficient
-
-#             mu (np.ndarray[float]) - means of the underyling normal distributions (3 x 2)
-
-#             sigma (np.ndarray[float]) - std devs of the underyling normal distributions (3 x 2)
-
-#         """
-
-#         if mu is None:
-#             mu = np.array([[.5, 1.], [1., 1.], [2., 1.]], dtype=np.float64)
-
-#         if sigma is None:
-#             sigma = np.ones((3, 2), dtype=np.float64)
-#         sigma *= ambiguity
-
-#         self.samplers = {i: MultiFluorescence(mu=mu[i], sigma=sigma[i], rho=rho) for i in range(3)}
-
-#     def __call__(self, indices):
-#         """ Returns fluorescence sample for each index in <indices>. """
-#         return self.sample(indices)
-
-#     def sample(self, indices):
-#         """ Returns fluorescence sample for each index in <indices>. """
-#         sampler = np.vectorize(lambda x: self.samplers[x].sample(), signature='()->(n)')
-#         return sampler(indices)
-
-
-
