@@ -9,7 +9,8 @@ import pandas as pd
 from .clones import Clones
 from .phylogeny import Phylogeny
 from ..spatial.triangulation import LocalTriangulation
-from ..measure.fluorescence import Fluorescence
+from ..measure import MeasurementGenerator
+from ..microscopy import SyntheticMicroscopy
 from ..visualization.culture import CultureVisualization
 from .cells import Cell
 
@@ -165,15 +166,46 @@ class CultureProperties:
 
 
 class CultureMeasurements:
-    """ Methods for generating fluorescence measurements. """
+    """ Methods for generating synthetic measurements. """
 
-    def measure(self, ambiguity=0.1):
-        """ Returns clones-compatible dataframe. """
-        fluorescence = Fluorescence(ambiguity=ambiguity)
-        df = pd.DataFrame(self.xy, columns=['centroid_x', 'centroid_y'])
-        df['ground'] = self.genotypes
-        df['fluorescence'] = fluorescence(self.genotypes)
-        return df
+    def measure(self, ambiguity=0.1, **kwargs):
+        """
+        Returns dataframe of synthetic measurements.
+
+        Args:
+
+            ambiguity (float) - fluorescence ambiguity coefficient
+
+            kwargs: keyword arguments for measurement generator
+
+        """
+        return MeasurementGenerator(self, ambiguity=ambiguity, **kwargs).df
+
+    def generate_microscopy(self, ambiguity, bleedthrough,
+                            measurement_kwargs={},
+                            microscopy_kwargs={}):
+        """
+        Generate synthetic microscopy data.
+
+        Args:
+
+            ambiguity (float) - clonal marker ambiguity coefficient
+
+            bleedthrough (float) - bleedthrough coefficient
+
+            measurement_kwargs (dict) - keyword arguments for measurement generations
+
+            microscopy_kwargs (dict) - keyword arguments for synthetic microscopy
+
+        Returns:
+
+            image (SyntheticMicroscopy) - synthetic microscopy data
+
+        """
+        data = self.measure(ambiguity, **measurement_kwargs)
+        image = SyntheticMicroscopy(data, bleedthrough, **microscopy_kwargs)
+        image.draw()
+        return image
 
 
 class Culture(CultureProperties, CultureVisualization, CultureMeasurements):

@@ -13,6 +13,12 @@ growth/cells/cultures.py
 growth/cells/phylogeny.py
 growth/measure/__init__.py
 growth/measure/fluorescence.py
+growth/measure/measurements.py
+growth/microscopy/__init__.py
+growth/microscopy/conditional.py
+growth/microscopy/images.py
+growth/microscopy/microscopy.py
+growth/microscopy/nucleus.py
 growth/scripts/__init__.py
 growth/scripts/aggregate.py
 growth/scripts/build_sweep.py

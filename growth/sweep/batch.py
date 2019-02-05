@@ -52,8 +52,8 @@ class Batch(BatchVisualization):
         measurements = []
         for growth_id, simulation in enumerate(self):
             for fluorescence_id in range(replicates):
-                df = simulation.measure(ambiguity)
-                df['growth_replicate'] = growth_id
-                df['fluorescence_replicate'] = fluorescence_id
-                measurements.append(df)
+                data = simulation.measure(ambiguity)
+                data['growth_replicate'] = growth_id
+                data['fluorescence_replicate'] = fluorescence_id
+                measurements.append(data)
         return pd.concat(measurements)
