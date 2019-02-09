@@ -16,7 +16,11 @@ class GrowthSimulation(Culture):
                  recombination_start=0,
                  recombination_duration=4,
                  min_population=11,
+                 reference_population=None,
                  **kwargs):
+
+        if reference_population is None:
+            reference_population = 2**min_population
 
         # define seed population
         seed_size = 4
@@ -40,7 +44,7 @@ class GrowthSimulation(Culture):
 
         # instantiate culture
         super().__init__(starter=seed,
-                         reference_population=2**min_population,
+                         reference_population=reference_population,
                          **kwargs)
 
         # store additional properties

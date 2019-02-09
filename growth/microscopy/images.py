@@ -74,6 +74,7 @@ class ScalarImage:
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(size, size))
+
         ax.imshow(im, vmin=vmin, vmax=vmax, cmap=cmap)
         ax.invert_yaxis()
         ax.axis('off')

@@ -38,4 +38,5 @@ growth/visualization/animation.py
 growth/visualization/batch.py
 growth/visualization/colorbars.py
 growth/visualization/culture.py
+growth/visualization/settings.py
 growth/visualization/sweep.py

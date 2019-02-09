@@ -210,9 +210,7 @@ class CultureMeasurements:
 
         """
         data = self.measure(ambiguity, rho, **measurement_kwargs)
-        image = SyntheticMicroscopy(data, bleedthrough, **microscopy_kwargs)
-        image.draw()
-        return image
+        return SyntheticMicroscopy(data, bleedthrough, **microscopy_kwargs)
 
 
 class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
