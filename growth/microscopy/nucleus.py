@@ -5,7 +5,68 @@ from copy import deepcopy
 from ..measure import LognormalSampler
 
 
-class Nucleus:
+class NucleusLabel:
+    """
+    Class for drawing an individual nucleus label on an existing image.
+    """
+
+    def __init__(self, xy, label=1, radius=6):
+        """
+
+        Args:
+
+            xy (np.ndarray[float]) - nucleus position in cartesian coordinates
+
+            label (int) - nucleus label
+
+            radius (int) - nuclear radius, in pixels
+
+        """
+
+        self.xy = xy.astype(np.uint16)
+        self.label = label
+        self.radius = radius
+
+        # define binary image mask
+        self.circle_mask = disk(self.radius).astype(bool)
+        self.build_fill_indices()
+
+    @property
+    def num_pixels(self):
+        """ Number of pixels in nucleus. """
+        return self.circle_mask.sum()
+
+    def distort(self):
+        """ Distort contour my manipulating binary mask. """
+        pass
+
+    def build_fill_indices(self):
+        """ Constructs list of pixel indices spanned by nucleus. """
+        xx,yy = np.array(np.meshgrid(*2*(range(-self.radius, self.radius+1),)))
+        xx += self.xy[0]
+        yy += self.xy[1]
+        self.fill_indices = (xx[self.circle_mask].ravel(), yy[self.circle_mask].ravel())
+
+    def _replace_pixels(self, im, values):
+        """ Replace existing pixel values in <im> with <values>. """
+        im[self.fill_indices] = values
+
+    def draw(self, im):
+        """
+        Add nucleus label to <im>.
+
+        Args:
+
+            im (np.ndarray[float]) - 2D array of image pixels
+
+            replace (bool) - if True, replace existing pixel values
+
+        """
+        labels = np.ones(self.num_pixels, dtype=int) * self.label
+        self._replace_pixels(im, values=labels)
+
+
+class Nucleus(NucleusLabel):
     """
     Class for drawing an indiviudal nucleus on an existing image.
 
@@ -36,26 +97,6 @@ class Nucleus:
         # define binary image mask
         self.circle_mask = disk(self.radius).astype(bool)
         self.build_fill_indices()
-
-    @property
-    def num_pixels(self):
-        """ Number of pixels in nucleus. """
-        return self.circle_mask.sum()
-
-    def distort(self):
-        """ Distort contour my manipulating binary mask. """
-        pass
-
-    def build_fill_indices(self):
-        """ Constructs list of pixel indices spanned by nucleus. """
-        xx,yy = np.array(np.meshgrid(*2*(range(-self.radius, self.radius+1),)))
-        xx += self.xy[0]
-        yy += self.xy[1]
-        self.fill_indices = (xx[self.circle_mask].ravel(), yy[self.circle_mask].ravel())
-
-    def _replace_pixels(self, im, values):
-        """ Replace existing pixel values in <im> with <values>. """
-        im[self.fill_indices] = values
 
     def _add_pixels(self, im, values):
         """ Add <values> to <im>. """

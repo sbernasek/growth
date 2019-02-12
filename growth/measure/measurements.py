@@ -20,10 +20,10 @@ class MeasurementGenerator:
                 nuclear_stain_sigma=0.3,
                 control_sigma=0.3,
                 clonal_marker_mu=None,
-                measurement_noise=0.3):
+                measurement_noise=0.):
 
         # instantiate measurement dataframe with cell positions
-        self.df = pd.DataFrame(culture.xy, columns=['centroid_x','centroid_y'])
+        self.df = pd.DataFrame(culture.xy, columns=['x','y'])
         self.df['true_dosage'] = culture.genotypes
 
         # store parameters

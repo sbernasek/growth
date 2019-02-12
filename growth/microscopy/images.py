@@ -31,6 +31,11 @@ class ScalarImage:
         """ Maximum pixel intensity. """
         return self.im.max()
 
+    @property
+    def im_normalized(self):
+        """ Image normalized by the maximum value. """
+        return self.im/self.max
+
     def percentile(self, q):
         """ 98th percentile of pixel intensities. """
         return np.percentile(self.im.ravel(), q=q)
@@ -64,7 +69,7 @@ class ScalarImage:
 
             vmin, vmax (int) - colormap bounds
 
-            cmap (matplotlib.ColorMap)
+            cmap (matplotlib.ColorMap or str) - if value is 'r', 'g', or 'b', use RGB colorscheme
 
             size (int) - image panel size, in inches
 
@@ -75,13 +80,30 @@ class ScalarImage:
         if ax is None:
             fig, ax = plt.subplots(figsize=(size, size))
 
-        ax.imshow(im, vmin=vmin, vmax=vmax, cmap=cmap)
+        if vmax is None:
+            vmax = im.max()
+
+        # render image
+        if type(cmap) == str:
+            assert cmap in 'rgb', 'Color not recognized.'
+            im_rgb = np.zeros(im.shape+(3,), dtype=np.float64)
+            im_rgb[:,:,'rgb'.index(cmap)] = (im-vmin)/(vmax-vmin)
+            im_rgb[im_rgb>1.] = 1.
+            ax.imshow(im_rgb)
+        else:
+            ax.imshow(im, vmin=vmin, vmax=vmax, cmap=cmap)
+
+        # invert axis and remove ticks
         ax.invert_yaxis()
         ax.axis('off')
 
     def render(self, **kwargs):
         """ Render image. """
         self._render(self.im.T, **kwargs)
+
+    def render_blank(self, **kwargs):
+        """ Render image. """
+        self._render(np.zeros(self.shape, dtype=int), **kwargs)
 
     def center_xycoords(self, xy, shrinkage=0.9):
         """ Project zero-centered coordinates to center of image. """

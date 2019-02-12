@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.stats as st
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 
 
 class LognormalSampler:
@@ -194,28 +195,51 @@ class MultiLognormalSampler:
             size=size)
         return sample
 
-    def show_pdf(self, ax=None, xlim=(0, 1), norm=True):
-        """ Plot probability density function. """
+    def show_pdf(self,
+                 ax=None,
+                 norm=True,
+                 cmap=None,
+                 include_components=True,
+                 component_lw=1,
+                 include_composite=True,
+                 composite_lw=0.5):
+        """
+        Plot probability density function.
+        """
 
+        # create figure
         if ax is None:
             fig, ax = plt.subplots(figsize=(3, 2))
-        ax.set_xlabel('Intensity')
-        ax.set_ylabel('Density')
+        line_kwargs = dict(lw=component_lw)
 
         # plot component distributions
         pdf = np.zeros(self.support.size, dtype=np.float64)
         for i in range(3):
+
+            # evaluate component
             rv = self.freeze_univariate(i)
             component = rv.pdf(self.support)
             if norm:
                 component /= 3
-
             pdf += component
-            ax.plot(self.support, component)
+
+            # plot component
+            if include_components:
+
+                # determine line color
+                if cmap is not None:
+                    norm = Normalize(vmin=-1, vmax=2)
+                    line_kwargs['color'] = cmap(norm(i))
+
+                # plot component
+                ax.plot(self.support, component, **line_kwargs)
 
         # plot pdf
-        ax.plot(self.support, pdf, '-k')
+        if include_composite:
+            ax.plot(self.support, pdf, '-k', lw=composite_lw)
 
         # format axes
+        ax.set_xlabel('Intensity')
+        ax.set_ylabel('Density')
         ylim = (0, np.percentile(pdf[1:], q=99))
         ax.set_ylim(*ylim)

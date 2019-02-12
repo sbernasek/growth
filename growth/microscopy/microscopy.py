@@ -6,7 +6,7 @@ from scipy.ndimage import measurements
 from skimage.morphology import disk
 
 from .images import ScalarImage, DependentScalarImage
-from .nucleus import Nucleus
+from .nucleus import Nucleus, NucleusLabel
 
 
 class SyntheticImage(ScalarImage):
@@ -64,8 +64,9 @@ class SyntheticImage(ScalarImage):
         self.bg_noise = bg_noise
 
         # define nuclear positions
-        centroids = data[['centroid_x', 'centroid_y']].values
-        self.centroids = self.center_xycoords(centroids)
+        self.centroids = self.center_xycoords(data[['x', 'y']].values)
+        self.data['centroid_x'] = self.centroids[:, 0]
+        self.data['centroid_y'] = self.centroids[:, 1]
 
         # set nuclear radius
         self.radius = radius
@@ -168,13 +169,29 @@ class SyntheticImage(ScalarImage):
         """
         self._fill(0, mu, sigma)
 
-    def _draw_nuclei(self, channel, means, stds, replace=True):
+    def _build_segmentation(self):
+        """
+        Draw nuclear labels on a segmentation mask.
+
+        Returns:
+
+            im (2D np.ndarray[np.int64]) - segmentation mask
+
+        """
+        mask = np.ones((self.shape), dtype=np.int64) * -1
+        for i in range(self.num_nuclei):
+            xy = self.centroids[i]
+            nucleus = NucleusLabel(xy, label=i, radius=self.radius)
+            nucleus.draw(mask)
+        return mask
+
+    def _draw_nuclei(self, im, means, stds, replace=True):
         """
         Draw individal nuclei on specified channel of the image.
 
         Args:
 
-            channel (int) - image channel in which nuclei are drawn
+            im (2D np.ndarray) - image in which nuclei are drawn
 
             means (np.ndarray[float]) - mean fluorescence level for each nucleus
 
@@ -183,7 +200,6 @@ class SyntheticImage(ScalarImage):
             replace (bool) - if True, replace existing pixels
 
         """
-        im = self.im[channel]
         for i in range(self.num_nuclei):
             xy = self.centroids[i]
             nucleus = Nucleus(xy, means[i], stds[i], radius=self.radius)
@@ -199,9 +215,9 @@ class SyntheticImage(ScalarImage):
             stds (np.ndarray[float]) - std dev of log-transformed pixel values within each nucleus
 
         """
-        self._draw_nuclei(0, means, stds)
+        self._draw_nuclei(self.im[0], means, stds)
 
-    def render(self, ax=None, size=8, vmax=None, **kwargs):
+    def render(self, ax=None, size=2, vmax=None, **kwargs):
         """
         Render image.
 
@@ -234,6 +250,23 @@ class SyntheticImage(ScalarImage):
 
         return fig
 
+    def render_mask(self, attribute, **kwargs):
+        """
+        Render image masked by specified nucleus <attribute>.
+        """
+
+        indices, values = self.data.index.values, self.data[attribute]
+        segment_to_label = dict(zip(indices, values))
+        segment_to_label[-1] = -1
+        segment_to_label = np.vectorize(segment_to_label.get)
+
+        label_mask = segment_to_label(self.segmentation)
+        label_mask = np.ma.MaskedArray(label_mask, label_mask==-1)
+
+        return self._render(label_mask.T, **kwargs)
+
+
+
 
 class SyntheticMicroscopy(SyntheticImage):
     """
@@ -242,7 +275,7 @@ class SyntheticMicroscopy(SyntheticImage):
 
     def __init__(self, data,
                  bleedthrough=0.0,
-                 bg_level=0.5,
+                 bg_level=0.2,
                  bg_noise=0.3,
                  radius=6,
                  height=1000,
@@ -303,6 +336,23 @@ class SyntheticMicroscopy(SyntheticImage):
         """ Return all pixels from background. """
         return self.im[~np.stack((self.foreground_mask,)*3)]
 
+    @property
+    def max(self):
+        """ Maximum fluorescence level in each channel. """
+        return self.im.max(axis=(1, 2))
+
+    @property
+    def im_normalized(self):
+        """ Image normalized by the maximum value in each channel. """
+        return self.im/self.max.reshape(-1,1,1)
+
+    @property
+    def rgb_im(self):
+        """ Image in RGB format. """
+        #im = np.swapaxes(np.swapaxes(self.im_normalized, 0, 1), 1, 2)
+        im = np.swapaxes(self.im_normalized, 0, 2)
+        return im[:, :, [1,2,0]]
+
     def initialize(self):
         """ Initialize blank image. """
         self.im = np.zeros((3, self.height, self.width), dtype=np.float64)
@@ -329,7 +379,7 @@ class SyntheticMicroscopy(SyntheticImage):
             stds (np.ndarray[float]) - std dev of log-transformed pixel values within each nucleus
 
         """
-        self._draw_nuclei(channel, means, stds)
+        self._draw_nuclei(self.im[channel], means, stds)
 
     def add_correlated_fluorescence(self, src, dst, rho=1.):
         """
@@ -404,7 +454,38 @@ class SyntheticMicroscopy(SyntheticImage):
         # add bleedthrough
         self.add_bleedthrough(1, 2, rho=self.bleedthrough)
 
-    def render(self, size=8, label=True, vmax=None, **kwargs):
+    def render(self, size=5, ax=None, **kwargs):
+        """
+        Render all image channels.
+
+        Args:
+
+
+            ax (matplotlib.axes.AxesSubplot) - if None, create figure
+
+            size (int) - figure panel size
+
+            kwargs: keyword argument for rendering
+
+
+        Returns:
+
+            fig (matplotlib.figure)
+
+        """
+
+        # create axes
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(size, size))
+
+        # render image
+        ax.imshow(self.rgb_im, **kwargs)
+        ax.invert_yaxis()
+        ax.axis('off')
+
+        return fig
+
+    def render_panels(self, size=5, label=True, vmax=None, **kwargs):
         """
         Render all image channels.
 
@@ -431,9 +512,9 @@ class SyntheticMicroscopy(SyntheticImage):
 
         figsize = (3*size+.25, size)
         fig, (ax0, ax1, ax2) = plt.subplots(ncols=3, figsize=figsize)
-        self._render(self.im[0].T, ax=ax0, vmax=vmax, **kwargs)
-        self._render(self.im[1].T, ax=ax1, vmax=vmax, **kwargs)
-        self._render(self.im[2].T, ax=ax2, vmax=vmax, **kwargs)
+        super()._render(self.im[0].T, ax=ax0, vmax=vmax, **kwargs)
+        super()._render(self.im[1].T, ax=ax1, vmax=vmax, **kwargs)
+        super()._render(self.im[2].T, ax=ax2, vmax=vmax, **kwargs)
 
         if label:
             ax0.set_title('Nuclear Marker')
