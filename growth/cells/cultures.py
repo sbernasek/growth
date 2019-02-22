@@ -184,7 +184,7 @@ class CultureMeasurements:
         return MeasurementGenerator(self,
             ambiguity=ambiguity,
             rho=rho,
-            **kwargs).df
+            **kwargs).data
 
     def generate_microscopy(self, ambiguity, rho, bleedthrough,
                             measurement_kwargs={},

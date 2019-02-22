@@ -11,7 +11,7 @@ class SweepResults:
 
         # evaluate mean across all replicates
         gb = data.groupby(['row_id', 'column_id'])
-        self.df = gb.agg(lambda x: np.mean(x[x!=np.inf])).reset_index()
+        self.data = gb.agg(lambda x: np.mean(x[x!=np.inf])).reset_index()
         self.shape = shape
 
     @property
@@ -26,7 +26,7 @@ class SweepResults:
 
     def to_grid(self, attribute):
         """ Returns 2D grid of <attribute> values. """
-        return self.df[attribute].values.reshape(self.shape)
+        return self.data[attribute].values.reshape(self.shape)
 
     def plot(self, attribute, log=False, complement=False, **kwargs):
         """

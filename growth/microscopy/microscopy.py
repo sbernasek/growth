@@ -266,8 +266,6 @@ class SyntheticImage(ScalarImage):
         return self._render(label_mask.T, **kwargs)
 
 
-
-
 class SyntheticMicroscopy(SyntheticImage):
     """
     Class allows for construction of a synthetic microscope image given a set of synthetic measurements.
@@ -329,12 +327,12 @@ class SyntheticMicroscopy(SyntheticImage):
     @property
     def foreground_pixels(self):
         """ Return all pixels from foreground. """
-        return self.im[np.stack((self.foreground_mask,)*3)]
+        return self.im[np.stack((self.foreground_mask,) * 3)]
 
     @property
     def background_pixels(self):
         """ Return all pixels from background. """
-        return self.im[~np.stack((self.foreground_mask,)*3)]
+        return self.im[~np.stack((self.foreground_mask,) * 3)]
 
     @property
     def max(self):

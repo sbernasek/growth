@@ -23,8 +23,8 @@ class MeasurementGenerator:
                 measurement_noise=0.):
 
         # instantiate measurement dataframe with cell positions
-        self.df = pd.DataFrame(culture.xy, columns=['x','y'])
-        self.df['true_dosage'] = culture.genotypes
+        self.data = pd.DataFrame(culture.xy, columns=['x','y'])
+        self.data['true_dosage'] = culture.genotypes
 
         # store parameters
         self.ambiguity = ambiguity
@@ -43,31 +43,31 @@ class MeasurementGenerator:
     @property
     def N(self):
         """ Number of samples. """
-        return len(self.df)
+        return len(self.data)
 
     def generate_measurements(self):
         """ Generate fluorescence measurements for each nucleus. """
 
         kwargs = dict(scale=self.expression_capacity_sigma, size=self.N)
-        self.df['expression_capacity'] = np.random.normal(**kwargs)
+        self.data['expression_capacity'] = np.random.normal(**kwargs)
 
         # measure nuclear stain
         args = (self.nuclear_stain_mu, self.nuclear_stain_sigma, self.rho)
         levels = self.conditioned_measurement(*args)
-        self.df['nuclear_stain'] = levels
-        self.df['nuclear_stain_std'] = levels * self.measurement_noise
+        self.data['nuclear_stain'] = levels
+        self.data['nuclear_stain_std'] = levels * self.measurement_noise
 
         # measure clonal marker
         args = (self.ambiguity, self.clonal_marker_mu, self.rho)
         levels = self.conditioned_clonal_measurement(*args)
-        self.df['clonal_marker'] = levels
-        self.df['clonal_marker_std'] = levels * self.measurement_noise
+        self.data['clonal_marker'] = levels
+        self.data['clonal_marker_std'] = levels * self.measurement_noise
 
         # measure control species
         args = (self.control_mu, self.control_sigma, self.rho)
         levels = self.conditioned_measurement(*args)
-        self.df['control'] = levels
-        self.df['control_std'] = levels * self.measurement_noise
+        self.data['control'] = levels
+        self.data['control_std'] = levels * self.measurement_noise
 
     def measurement(self, mu, sigma):
         """
@@ -96,7 +96,7 @@ class MeasurementGenerator:
             rho (float) - correlation coefficient with expression capacity
 
         """
-        x = self.df.expression_capacity.values
+        x = self.data.expression_capacity.values
         sampler = ConditionedLognormalSampler(x, mu, sigma)
         return sampler(rho=rho)
 
@@ -112,7 +112,7 @@ class MeasurementGenerator:
 
         """
         sampler = MultiLognormalSampler(ambiguity, mu=mu)
-        return sampler(self.df.true_dosage.values)
+        return sampler(self.data.true_dosage.values)
 
     def conditioned_clonal_measurement(self, ambiguity, mu, rho):
         """
@@ -125,6 +125,6 @@ class MeasurementGenerator:
             mu (np.ndarray[float]) - mean of the underyling normal distribution
 
         """
-        x = self.df.expression_capacity.values
+        x = self.data.expression_capacity.values
         sampler = ConditionedMultiLognormalSampler(x, ambiguity, mu=mu)
-        return sampler(self.df.true_dosage.values, rho=rho)
+        return sampler(self.data.true_dosage.values, rho=rho)

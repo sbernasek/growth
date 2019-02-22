@@ -22,9 +22,9 @@ class Batch(BatchVisualization):
     @property
     def results(self):
         """ Returns results of each simulation as a pandas dataframe. """
-        df = pd.DataFrame([simulation.results for simulation in self])
-        df['replicate_id'] = np.arange(self.size)
-        return df
+        data = pd.DataFrame([simulation.results for simulation in self])
+        data['replicate_id'] = np.arange(self.size)
+        return data
 
     def __getitem__(self, index):
         """ Returns simulation instance. """
