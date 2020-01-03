@@ -9,7 +9,6 @@ class Dendrogram:
         self.newick = newick
 
 
-
 class Phylogeny:
 
     def __init__(self, edge_list):

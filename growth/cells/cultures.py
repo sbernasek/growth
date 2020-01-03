@@ -2,13 +2,15 @@ from copy import deepcopy
 import pickle
 import numpy as np
 from functools import reduce
+from collections import Counter
 from operator import add
 import networkx as nx
 import pandas as pd
 
-from .clones import Clones
+from .patches import Patches
 from .phylogeny import Phylogeny
 from ..spatial.triangulation import LocalTriangulation
+from ..spatial.points import Points
 from ..measure import MeasurementGenerator
 from ..microscopy import SyntheticMicroscopy
 from ..visualization.culture import CultureVisualization
@@ -55,6 +57,11 @@ class CultureProperties:
     def genotypes(self):
         """ Cell genotypes. """
         return np.array([cell.genotype for cell in self.cells])
+
+    @property
+    def num_recombinant_cells(self):
+        """ Number of recombinant cells. """
+        return (self.genotypes != 1).sum()
 
     @property
     def xy_dict(self):
@@ -122,11 +129,6 @@ class CultureProperties:
         return [cell.lineage for cell in self.cells]
 
     @property
-    def dendrogram_edges(self):
-        """ Dendrogram edge list. """
-        return reduce(add, map(self.predecessor_search, self.lineages))
-
-    @property
     def phylogeny(self):
         """ Phylogeny. """
         return Phylogeny(self.dendrogram_edges)
@@ -150,19 +152,18 @@ class CultureProperties:
         """ Returns indices of cells with <genotype>.  """
         return (self.genotypes==genotype).nonzero()[0]
 
-    def parse_clones(self, genotype):
-        """ Returns properties for clones of specified <genotype>.  """
-        clones = self.xy_graph.subgraph(self.select(genotype))
+    def parse_patches(self, genotype):
+        """ Returns properties for patches of specified <genotype>.  """
+        patches = self.xy_graph.subgraph(self.select(genotype))
         return {
-            'number': nx.connected.number_connected_components(clones),
-            'sizes': [len(c) for c in nx.connected_components(clones)],
-            'nodes': [np.array(c) for c in nx.connected_components(clones)]}
+            'number': nx.connected.number_connected_components(patches),
+            'sizes': [len(c) for c in nx.connected_components(patches)],
+            'nodes': [np.array(c) for c in nx.connected_components(patches)]}
 
-    @property
-    def clones(self):
-        """ Clones instance. """
-        data = {genotype: self.parse_clones(genotype) for genotype in [0, 2]}
-        return Clones(data)
+    def get_patches(self, genotypes=(0, 2)):
+        """ Patches instance. """
+        data = {g: self.parse_patches(g) for g in genotypes}
+        return Patches(data)
 
 
 class CultureMeasurements:
@@ -213,7 +214,176 @@ class CultureMeasurements:
         return SyntheticMicroscopy(data, bleedthrough, **microscopy_kwargs)
 
 
-class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
+class CloneCounting:
+    """
+    Methods for counting the number of coherent clones.
+    """
+
+    @staticmethod
+    def get_sibling(lineage):
+        """ Returns lineage of sibling. """
+        if lineage[-1] == '0':
+            return lineage[:-1] + '1'
+        else:
+            return lineage[:-1] + '0'
+
+    @property
+    def num_coherent_clones(self):
+        """ Number of independent clonal lineages. """
+
+        num_clones = 0
+
+        # initialize genotype dictionary
+        genotypes = {}
+        for cell in self.cells:
+            genotypes[cell.lineage] = cell.genotype
+
+        # traverse phylogenetic tree from bottom to top
+        gen = max(self.generations)
+        while gen > 0:
+            lineages = [k for k in genotypes.keys() if len(k) == gen]
+            for lineage in lineages:
+                genotype = genotypes[lineage]
+                if genotypes[self.get_sibling(lineage)] == genotype:
+                    genotypes[lineage[:-1]] = genotype
+                else:
+                    genotypes[lineage[:-1]] = 1
+                    num_clones += 1
+            gen -= 1
+
+        return num_clones
+
+    @property
+    def genotype_dict(self):
+        """ Dictionary mapping lineage to genotype. """
+
+        # initialize genotype dictionary
+        genotypes = {}
+        for cell in self.cells:
+            genotypes[cell.lineage] = cell.genotype
+
+        # traverse phylogenetic tree from bottom to top
+        gen = max(self.generations)
+        while gen > 0:
+            lineages = [k for k in genotypes.keys() if len(k) == gen]
+            for lineage in lineages:
+                genotype = genotypes[lineage]
+                if genotypes[self.get_sibling(lineage)] == genotype:
+                    genotypes[lineage[:-1]] = genotype
+                else:
+                    genotypes[lineage[:-1]] = 1
+            gen -= 1
+
+        return genotypes
+
+    @property
+    def dendrogram_edges(self):
+        """ List of phylogenetic tree edges. """
+
+        lineages = self.lineages
+
+        # traverse phylogenetic tree from bottom to top
+        edges = []
+
+        while len(lineages) > 0:
+            child = lineages.pop()
+            if child == '':
+                continue
+
+            parent = child[:-1]
+            edges.append((parent, child))
+            lineages.append(parent)
+
+        return list(set(edges))
+
+    @property
+    def dendrogram(self):
+        """ Phylogenetic tree. """
+        return nx.Graph(self.dendrogram_edges)
+
+    def get_clones(self):
+        """ Returns list of recombinant clones. """
+
+        genotypes = self.genotype_dict
+        G = self.dendrogram
+        G_0 = G.subgraph([k for k,v in genotypes.items() if v == 0])
+        G_2 = G.subgraph([k for k,v in genotypes.items() if v == 2])
+
+        clones = []
+        clones += [c for c in nx.connected_components(G_0)]
+        clones += [c for c in nx.connected_components(G_2)]
+
+        leaf_nodes = set(self.lineages)
+
+        return [clone.intersection(leaf_nodes) for clone in clones]
+
+    def get_patches_list(self):
+        """ Returns list of patches. """
+
+        G_0 = self.xy_graph.subgraph(self.select(0))
+        G_2 = self.xy_graph.subgraph(self.select(2))
+
+        clones = []
+        clones += [c for c in nx.connected_components(G_0)]
+        clones += [c for c in nx.connected_components(G_2)]
+
+        return clones
+
+    def get_clone_sizes(self, factor=None):
+        """
+        Returns number of cells per coherent clone, with optional scaling factor used to exclude border region.
+        """
+
+        if factor == 1.0 or factor is None:
+            return [len(c) for c in self.get_clones()]
+
+        # compile scaling mask
+        mask = Points(self.xy).get_scale_mask(factor)
+        included = set(np.array(self.lineages)[mask])
+
+        # filter clone size list
+        sizes = [len(c.intersection(included)) for c in self.get_clones()]
+
+        return [s for s in sizes if s > 0]
+
+    @property
+    def mean_clone_size(self):
+        """ Mean number of cells per coherent clone. """
+        return self.num_recombinant_cells / self.num_coherent_clones
+
+    @property
+    def num_patches(self):
+        """ Number of distinct recombinant patches. """
+        return self.get_patches((0,2)).num_patches
+
+    @property
+    def mean_patch_size(self):
+        """ Mean number of cells per distinct recombinant patch. """
+        return self.get_patches((0,2)).mean_patch_size
+
+    @property
+    def clone_sizes_per_patch(self):
+        """ Clone sizes per distinct recombinant patch. """
+
+        to_clone = {}
+        for clone_id, members in enumerate(self.get_clones()):
+            for member in members:
+                to_clone[member] = clone_id
+
+        patches_list = self.get_patches_list()
+
+        clone_sizes = []
+        for patches in patches_list:
+            clone_ids = [to_clone[self.lineages[patch]] for patch in patches]
+            clone_sizes += list(Counter(clone_ids).values())
+
+        return clone_sizes
+
+
+class Culture(CultureProperties,
+              CultureVisualization,
+              CultureMeasurements,
+              CloneCounting):
 
     def __init__(self,
                  starter=None,
@@ -238,6 +408,25 @@ class Culture(CultureProperties, CultureVisualization, CultureMeasurements):
 
     def __add__(self, b):
         return self.__class__(self.cells + b.cells)
+
+    def filter_edges(self, factor=1.0):
+        """
+        Returns culture with edge cells excluded.
+
+        Args:
+
+            factor (float) - scale factor above which cells are excluded
+
+        """
+
+        # compile scaling mask
+        mask = Points(self.xy).get_scale_mask(factor)
+        cells = np.array(self.cells)[mask]
+
+        # instantiate
+        child = Culture(starter=cells, scaling=self.scaling, reference_population=self.reference_population)
+
+        return child
 
     def save(self, filepath, save_history=True):
         """ Save pickled object to <path>. """

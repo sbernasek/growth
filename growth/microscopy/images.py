@@ -111,7 +111,7 @@ class ScalarImage:
         centered_xy = deepcopy(xy)
         centered_xy[:, 0] = ((xy[:, 0]*center_x*shrinkage) + center_x)
         centered_xy[:, 1] = ((xy[:, 1]*center_y*shrinkage) + center_y)
-        return centered_xy.astype(np.uint16)
+        return centered_xy.astype(int)
 
 
 class DependentScalarImage(ScalarImage):
