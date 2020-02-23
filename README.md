@@ -21,7 +21,7 @@ Required:
 Installation
 ============
 
-The simplest method is to download the latest [distribution](https://github.com/sebastianbernasek/growth/archive/v0.1.tar.gz) and install via ``pip``:
+The simplest method is to download the latest [distribution](https://github.com/sebastianbernasek/growth/archive/0.1.tar.gz) and install via ``pip``:
 
     pip install growth-0.1.tar.gz
 
