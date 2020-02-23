@@ -1,8 +1,19 @@
 import numpy as np
-from skimage.morphology import disk
 from copy import deepcopy
 
 from ..measure import LognormalSampler
+
+
+def disk(radius, dtype=int):
+    """
+    Returns flat disk structuring element.
+
+    * Borrowed directly from scikit-image.
+
+    """
+    L = np.arange(-radius, radius + 1)
+    X, Y = np.meshgrid(L, L)
+    return np.array((X ** 2 + Y ** 2) <= radius ** 2, dtype=dtype)
 
 
 class NucleusLabel:

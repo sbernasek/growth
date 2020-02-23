@@ -9,12 +9,12 @@ import pandas as pd
 
 from .patches import Patches
 from .phylogeny import Phylogeny
+from .cells import Cell
 from ..spatial.triangulation import LocalTriangulation
 from ..spatial.points import Points
 from ..measure import MeasurementGenerator
 from ..microscopy import SyntheticMicroscopy
 from ..visualization.culture import CultureVisualization
-from .cells import Cell
 
 
 class CultureProperties:

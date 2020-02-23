@@ -1,6 +1,5 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-from ete3 import Tree, TreeStyle
 
 
 class Dendrogram:

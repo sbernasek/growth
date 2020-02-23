@@ -3,10 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import maximum_filter
 from scipy.ndimage import binary_dilation
 from scipy.ndimage import measurements
-from skimage.morphology import disk
 
 from .images import ScalarImage, DependentScalarImage
-from .nucleus import Nucleus, NucleusLabel
+from .nucleus import Nucleus, NucleusLabel, disk
 
 
 class SyntheticImage(ScalarImage):
